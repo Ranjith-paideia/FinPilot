@@ -1,0 +1,6 @@
+{
+  "name": "FinPilot – Personal Finance & Multi-Asset Planner",
+  "description": "Adaptive personal finance, debt recovery, and multi-asset wealth planner tailored for Indian earners.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

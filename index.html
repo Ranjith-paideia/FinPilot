@@ -1,0 +1,3457 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinPilot – Adaptive Personal Finance, Debt & Multi-Asset Planner</title>
+  <meta name="description" content="Adaptive personal finance, debt recovery avalanche, net worth tracker, and multi-asset wealth planner tailored for Indian earners (₹15k to ₹5L/month)." />
+  <meta property="og:title" content="FinPilot – Adaptive Personal Finance & Net Worth Planner" />
+  <meta property="og:description" content="Client-side personal finance and net worth planner for Indian earners. Track assets, debt avalanche, emergency buffer, and multi-asset investments." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- 
+    Tailwind CSS CDN pinned for rapid prototyping (v3.4.17).
+    NOTE: Tailwind CDN is for prototyping and local exploration.
+    To compile for production:
+      1. npm install -D tailwindcss @tailwindcss/cli
+      2. Create src/input.css with @import "tailwindcss";
+      3. Compile: npx @tailwindcss/cli -i ./src/input.css -o ./dist/output.css --minify
+  -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            fin: {
+              bg: '#050914',
+              surface: '#0b1329',
+              card: '#111c38',
+              cardHover: '#162347',
+              border: '#1f2f58',
+              emerald: '#10b981',
+              emeraldDim: '#064e3b',
+              amber: '#f59e0b',
+              amberDim: '#78350f',
+              rose: '#f43f5e',
+              roseDim: '#881337',
+              accent: '#38bdf8'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Pinned Chart.js CDN (v4.4.7) with fallback detection -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* Resilient fallback styles in case CDN fails to load */
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      background-color: #050914;
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    input[type=range] {
+      accent-color: #10b981;
+    }
+    /* Accessible focus states */
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+    /* Print stylesheet for clean client reports */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print, header, .sticky-bar, button, input[type=range], .macro-fetch-box {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .bg-fin-surface, .bg-fin-card, .bg-slate-900 {
+        background-color: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+      .text-slate-100, .text-slate-200, .text-white {
+        color: #0f172a !important;
+      }
+      .text-slate-400, .text-slate-300 {
+        color: #475569 !important;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-fin-bg text-slate-100 min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200 antialiased pb-28 md:pb-16">
+
+  <!-- ======================== HEADER ======================== -->
+  <header class="border-b border-fin-border bg-fin-surface/90 backdrop-blur sticky top-0 z-40 px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center font-black text-slate-950 text-xl shadow-lg shadow-emerald-500/20">
+          ₹
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+              FinPilot
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-medium">India Edition</span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Adaptive Personal Finance, Debt Recovery, Net Worth & Multi-Asset Wealth Engine</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions, Presets & Privacy -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <!-- Privacy tag -->
+        <div class="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span>Your numbers never leave this browser</span>
+        </div>
+
+        <!-- Presets Buttons -->
+        <div class="flex items-center bg-slate-900 border border-fin-border rounded-lg p-0.5 no-print">
+          <span class="text-[11px] text-slate-400 px-2 font-medium hidden md:inline">Presets:</span>
+          <button id="preset-30k" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition font-medium text-[11px]" title="Test ₹30,000 Earner (Yellow)">₹30k Earner</button>
+          <button id="preset-100k" class="px-2 py-1 text-slate-300 hover:text-white hover:bg-slate-800 rounded transition font-medium text-[11px]" title="Test ₹1,00,000 Earner (Green)">₹100k Earner</button>
+          <button id="preset-debt" class="px-2 py-1 text-rose-300 hover:text-white hover:bg-rose-950/60 rounded transition font-medium text-[11px]" title="Test Debt Recovery (Red)">Debt Recovery</button>
+        </div>
+
+        <!-- Action dropdown/buttons -->
+        <button id="btn-save-plan" class="px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition font-medium flex items-center gap-1" title="Persist plan to browser storage">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          <span id="save-plan-text">Save</span>
+        </button>
+
+        <button id="btn-export-wa" class="px-2.5 py-1.5 rounded-md bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 transition font-medium flex items-center gap-1" title="Copy WhatsApp summary">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+          <span class="hidden sm:inline">WhatsApp</span>
+        </button>
+
+        <button id="btn-export-json" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition" title="Download JSON configuration">
+          JSON
+        </button>
+
+        <button id="btn-print" class="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition" title="Print or save as PDF">
+          Print
+        </button>
+
+        <button id="btn-reset" class="px-2 py-1.5 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-950/30 transition text-xs" title="Reset all fields to defaults">
+          Reset
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================== TOAST NOTIFICATION ======================== -->
+  <div id="toast" class="fixed top-16 right-4 z-50 transform translate-y-[-120%] opacity-0 transition-all duration-300 max-w-sm px-4 py-2.5 rounded-lg bg-emerald-500 text-slate-950 font-semibold text-xs shadow-xl flex items-center gap-2 pointer-events-none">
+    <span id="toast-msg">Action completed</span>
+  </div>
+
+  <!-- ======================== MAIN CONTAINER ======================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- SELF-TEST BANNER (Shown if ?test=1) -->
+    <div id="test-results-banner" class="hidden p-4 rounded-xl border border-indigo-500/40 bg-indigo-950/40 text-xs">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2 font-bold text-indigo-300">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse"></span>
+          Self-Tests Automated Suite (?test=1)
+        </div>
+        <span id="test-summary-badge" class="px-2 py-0.5 rounded font-mono text-[11px] bg-indigo-900 text-indigo-200">Running...</span>
+      </div>
+      <div id="test-results-list" class="space-y-1 font-mono text-[11px] text-slate-300"></div>
+    </div>
+
+    <!-- DEFICIT ALERT (Conditional) -->
+    <div id="deficit-banner" class="hidden rounded-xl border border-rose-500/50 bg-rose-950/50 p-4 text-rose-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-rose-950/50">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-lg bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0 text-xl font-bold">!</div>
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide uppercase">Cashflow Deficit Detected</h2>
+          <p class="text-xs text-rose-200 mt-0.5" id="deficit-msg">
+            Expenses + minimum EMIs exceed your monthly net income. Multi-asset investing is paused.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs font-medium">
+        <span class="px-3 py-1.5 rounded-md bg-rose-500 text-slate-950 font-bold">Action Required</span>
+        <span class="text-slate-300">Cut non-essential expenses or restructure debt immediately.</span>
+      </div>
+    </div>
+
+    <!-- STARTER BUFFER / ADVISORY BANNERS -->
+    <div id="advisory-banners-container" class="space-y-3"></div>
+
+    <!-- ======================== TOP SUMMARY SECTION: NET WORTH & HEALTH SCORE ======================== -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+      <!-- 1. NET WORTH SUMMARY CARD (Top Primary Card - lg:col-span-6) -->
+      <div id="hero-net-worth-card" class="lg:col-span-6 rounded-2xl border border-fin-border bg-fin-surface p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                NW
+              </span>
+              <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Total Net Worth</span>
+            </div>
+            <span id="hero-net-worth-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+              Positive Equity
+            </span>
+          </div>
+
+          <!-- Prominent Net Worth Figure -->
+          <div class="my-2">
+            <div class="flex items-baseline gap-2">
+              <span id="hero-net-worth-value" class="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight">₹0</span>
+              <span id="hero-net-worth-shorthand" class="text-xs text-slate-400 font-mono"></span>
+            </div>
+            <p class="text-[11px] text-slate-400">Total Tracked Assets − Total Outstanding Liabilities</p>
+          </div>
+
+          <!-- Assets vs Liabilities Split Bar -->
+          <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 uppercase block">Total Assets</span>
+                <span id="hero-assets-sum" class="font-mono font-bold text-emerald-400 text-sm">₹0</span>
+              </div>
+              <div class="text-center">
+                <span class="text-[10px] text-slate-400 uppercase block">Debt-To-Asset</span>
+                <span id="hero-dta-ratio" class="font-mono font-bold text-slate-200 text-xs">0%</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] text-slate-400 uppercase block">Total Liabilities</span>
+                <span id="hero-liabilities-sum" class="font-mono font-bold text-rose-400 text-sm">₹0</span>
+              </div>
+            </div>
+
+            <!-- Visual Bar -->
+            <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden flex">
+              <div id="bar-assets-ratio" class="h-full bg-emerald-500 transition-all duration-500" style="width: 100%"></div>
+              <div id="bar-liabilities-ratio" class="h-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Jump / Asset Count Footer -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          <span id="hero-asset-categories-summary">5 asset holdings active</span>
+          <a href="#section-asset-tracker" class="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition">
+            <span>Manage Asset Holdings</span>
+            <span>↓</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 2. HEALTH SCORE & NEXT BEST ACTION (lg:col-span-6) -->
+      <div class="lg:col-span-6 rounded-2xl border border-fin-border bg-fin-surface p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <div class="flex flex-col sm:flex-row items-center gap-5 border-b border-fin-border pb-4">
+          <!-- Health Score Ring -->
+          <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-slate-800" fill="none" />
+              <circle id="score-ring-circle" cx="50" cy="50" r="42" stroke="currentColor" stroke-width="8" class="text-emerald-500 transition-all duration-700 stroke-dashoffset-0" stroke-dasharray="264" stroke-dashoffset="66" stroke-linecap="round" fill="none" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="health-score-value" class="text-2xl font-extrabold text-white tracking-tight">--</span>
+              <span class="text-[9px] uppercase font-semibold text-slate-400">/ 100</span>
+            </div>
+          </div>
+
+          <div class="flex-1 w-full text-center sm:text-left">
+            <div class="flex items-center justify-center sm:justify-start gap-2">
+              <span class="text-xs uppercase font-bold tracking-wider text-slate-400">Financial Health</span>
+              <span id="health-score-grade" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Stable</span>
+              <span id="gate-badge-mini" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold">GATE: --</span>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-slate-300">
+              <div>Buffer: <span id="score-breakdown-buffer" class="font-semibold text-slate-200">--/30</span></div>
+              <div>Debt: <span id="score-breakdown-debt" class="font-semibold text-slate-200">--/30</span></div>
+              <div>Savings: <span id="score-breakdown-savings" class="font-semibold text-slate-200">--/20</span></div>
+              <div>Cover: <span id="score-breakdown-insurance" class="font-semibold text-slate-200">--/20</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Best Action -->
+        <div class="pt-3">
+          <div class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span>Next Best Action (Single Priority)</span>
+          </div>
+          <p id="next-best-action-text" class="text-xs sm:text-sm font-semibold text-white leading-snug">
+            Analyzing your numbers...
+          </p>
+          <p id="next-best-action-sub" class="text-[11px] text-slate-400 mt-0.5">
+            Calculated dynamically based on high-APR debts, emergency runway, and insurance gap.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== CORE GRID ======================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN: INPUTS (lg:col-span-5) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- 1. INCOME & ESSENTIAL EXPENSES -->
+        <div class="rounded-xl border border-fin-border bg-fin-surface p-4 sm:p-5 shadow">
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center justify-between">
+            <span>1. Cashflow Foundation</span>
+            <span class="text-xs font-normal text-slate-400 lowercase">all figures client-side</span>
+          </h2>
+
+          <div class="space-y-4 text-xs">
+            <!-- Income Type -->
+            <div>
+              <label class="block font-medium text-slate-300 mb-1.5">Income Type</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-type-salaried" class="py-2 px-3 rounded-lg border text-center font-semibold transition text-xs border-emerald-500 bg-emerald-500/10 text-emerald-300">
+                  Salaried (100% stable)
+                </button>
+                <button type="button" id="btn-type-irregular" class="py-2 px-3 rounded-lg border text-center font-medium transition text-xs border-fin-border bg-slate-900 text-slate-400 hover:text-slate-200">
+                  Irregular (Plan on 70%)
+                </button>
+              </div>
+              <p id="income-plan-hint" class="text-[11px] text-slate-400 mt-1">
+                Using 100% of declared in-hand income for cashflow planning.
+              </p>
+            </div>
+
+            <!-- Monthly Income Input & Slider -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="input-income" class="font-medium text-slate-300">Monthly In-Hand (₹)</label>
+                <span id="label-income-fmt" class="font-mono font-bold text-emerald-400 text-sm">₹30,000</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="slider-income" min="15000" max="500000" step="1000" value="30000" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                <input type="number" id="input-income" min="15000" max="500000" step="1000" value="30000" class="w-28 px-2 py-1 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+              </div>
+              <span id="err-income" class="text-[11px] text-rose-400 hidden">Please enter between ₹15,000 and ₹5,00,000</span>
+            </div>
+
+            <!-- Essential Expenses Input & Slider -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="input-expenses" class="font-medium text-slate-300">Essential Monthly Expenses (Rent, Food, Bills)</label>
+                <span id="label-expenses-fmt" class="font-mono font-bold text-slate-200 text-sm">₹18,000</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="range" id="slider-expenses" min="5000" max="400000" step="500" value="18000" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+                <input type="number" id="input-expenses" min="5000" max="400000" step="500" value="18000" class="w-28 px-2 py-1 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+              </div>
+              <span id="err-expenses" class="text-[11px] text-rose-400 hidden">Expenses cannot exceed total income</span>
+            </div>
+
+            <!-- Dependents & Current Emergency Buffer -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label for="input-dependents" class="block font-medium text-slate-300 mb-1">Dependents</label>
+                <select id="input-dependents" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded font-semibold text-slate-200 text-xs focus:border-emerald-500">
+                  <option value="0">0 (Self only)</option>
+                  <option value="1">1 dependent</option>
+                  <option value="2">2 dependents</option>
+                  <option value="3">3 dependents</option>
+                  <option value="4">4 dependents</option>
+                  <option value="5">5+ dependents</option>
+                </select>
+                <span class="text-[10px] text-slate-400">Adds 1 month to emergency target</span>
+              </div>
+
+              <div>
+                <label for="input-savings" class="block font-medium text-slate-300 mb-1">Emergency Savings (₹)</label>
+                <input type="number" id="input-savings" min="0" max="5000000" step="1000" value="25000" class="w-full px-2 py-1.5 bg-slate-900 border border-fin-border rounded font-mono font-semibold text-slate-200 text-xs text-right focus:border-emerald-500" />
+                <span id="label-savings-runway" class="text-[10px] text-slate-400">Runway: 1.4 months</span>
+              </div>
+            </div>
+
+            <!-- Insurance Checks -->
+            <div class="pt-2 border-t border-slate-800 space-y-2">
+              <label class="block font-medium text-slate-300">Protective Insurance Moats</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <span class="text-[11px] text-slate-400 block mb-0.5">Health Cover</span>
+                  <select id="select-health-insurance" class="w-full px-2 py-1 bg-slate-900 border border-fin-border rounded text-xs text-slate-200">
+                    <option value="none">None (High Risk)</option>
+                    <option value="under5L">Under ₹5 Lakhs (Partial)</option>
+                    <option value="5LorMore" selected>₹5 Lakhs or More (Adequate)</option>
+                  </select>
+                </div>
+
+                <div id="term-insurance-box">
+                  <span class="text-[11px] text-slate-400 block mb-0.5">Term Life Cover</span>
+                  <select id="select-term-insurance" class="w-full px-2 py-1 bg-slate-900 border border-fin-border rounded text-xs text-slate-200">
+                    <option value="no">No Term Life</option>
+                    <option value="yes" selected>Yes (Adequate 10x+)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tax Regime (Highlighted for >= 80k) -->
+            <div id="tax-regime-container" class="pt-2 border-t border-slate-800">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="block font-medium text-slate-300">Tax Regime</span>
+                  <span class="text-[10px] text-slate-400">Determines 80C, ELSS & NPS utility</span>
+                </div>
+                <div class="flex items-center bg-slate-900 p-0.5 rounded border border-fin-border">
+                  <button type="button" id="btn-regime-new" class="px-2.5 py-1 text-xs font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">New (Default)</button>
+                  <button type="button" id="btn-regime-old" class="px-2.5 py-1 text-xs text-slate-400 hover:text-white rounded">Old</button>
+                </div>
+              </div>
+              <p id="tax-regime-tip" class="text-[11px] text-slate-400 mt-1">
+                Under the New Regime (default), Section 80C & 80CCD(1B) deductions are NOT available. Focus on pure post-tax compounding.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. NET WORTH & ASSET HOLDINGS TRACKER (NEW SECTION) -->
+        <div id="section-asset-tracker" class="rounded-xl border border-fin-border bg-fin-surface p-4 sm:p-5 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>2. Asset Holdings & Net Worth Tracker</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">Live Total</span>
+              </h2>
+              <p class="text-xs text-slate-400">Track all asset categories to monitor your true financial net worth</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- 1. Emergency Fund (Synced with Section 1) -->
+            <div class="p-2.5 rounded-lg bg-slate-900/80 border border-fin-border flex items-center justify-between">
+              <div>
+                <span class="font-semibold text-slate-200 block">Liquid Savings & Emergency Cash</span>
+                <span class="text-[10px] text-slate-400">Directly synced from Emergency Savings</span>
+              </div>
+              <span id="tracker-savings-val" class="font-mono font-bold text-emerald-400 text-sm">₹25,000</span>
+            </div>
+
+            <!-- 2. Mutual Funds & Direct Equity -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="asset-input-mf" class="font-medium text-slate-300">Mutual Funds & Direct Equity (₹)</label>
+                <span class="text-[10px] text-slate-400">Demat / Folio Value</span>
+              </div>
+              <input type="number" id="asset-input-mf" min="0" step="5000" placeholder="0" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+            </div>
+
+            <!-- 3. EPF, PPF & NPS Retirement Corpus -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="asset-input-epf" class="font-medium text-slate-300">EPF, PPF & NPS Retirement Corpus (₹)</label>
+                <span class="text-[10px] text-slate-400">Passbook / PRAN Balance</span>
+              </div>
+              <input type="number" id="asset-input-epf" min="0" step="5000" placeholder="0" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+            </div>
+
+            <!-- 4. Gold & Precious Bullion -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="asset-input-gold" class="font-medium text-slate-300">Gold Bullion, ETFs & SGBs (₹)</label>
+                <span class="text-[10px] text-slate-400">Estimated Current Value</span>
+              </div>
+              <input type="number" id="asset-input-gold" min="0" step="5000" placeholder="0" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+            </div>
+
+            <!-- 5. Real Estate Equity, Vehicle & Other Assets -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="asset-input-realestate" class="font-medium text-slate-300">Real Estate Equity & Other Holdings (₹)</label>
+                <span class="text-[10px] text-slate-400">Net equity (value − mortgage)</span>
+              </div>
+              <input type="number" id="asset-input-realestate" min="0" step="10000" placeholder="0" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono font-semibold text-white focus:border-emerald-500 text-xs" />
+            </div>
+
+            <!-- Summary Box inside Tracker -->
+            <div class="mt-3 p-3 rounded-lg bg-slate-950 border border-fin-border space-y-2">
+              <div class="flex justify-between items-center font-semibold">
+                <span class="text-slate-300">Total Tracked Assets:</span>
+                <span id="tracker-total-assets" class="font-mono text-emerald-400 text-sm">₹25,000</span>
+              </div>
+              <div class="flex justify-between items-center font-semibold text-slate-400">
+                <span>Total Liabilities (Debts):</span>
+                <span id="tracker-total-liabilities" class="font-mono text-rose-400 text-sm">₹0</span>
+              </div>
+              <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                <span class="font-bold text-white">Calculated Net Worth:</span>
+                <span id="tracker-net-worth" class="font-mono font-black text-emerald-300 text-base">₹25,000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. DEBTS & AVALANCHE ACCELERATOR -->
+        <div class="rounded-xl border border-fin-border bg-fin-surface p-4 sm:p-5 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider">3. Outstanding Debts</h2>
+              <p class="text-xs text-slate-400">Up to 5 debts. Sorted automatically by APR (Avalanche priority).</p>
+            </div>
+            <button id="btn-add-debt" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-emerald-400 font-semibold transition flex items-center gap-1">
+              + Add Debt
+            </button>
+          </div>
+
+          <!-- Debts List Container -->
+          <div id="debts-list" class="space-y-3">
+            <!-- Debt cards rendered here -->
+          </div>
+
+          <!-- Total Minimum EMIs counter -->
+          <div class="mt-4 p-3 rounded-lg bg-slate-900/90 border border-fin-border flex items-center justify-between text-xs">
+            <span class="text-slate-400">Total Mandatory EMIs:</span>
+            <span id="label-total-emis" class="font-mono font-bold text-rose-400 text-sm">₹0</span>
+          </div>
+
+          <!-- Extra Payment Booster Slider -->
+          <div class="mt-4 pt-3 border-t border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <label for="slider-booster" class="font-medium text-xs text-slate-300">
+                Extra Payoff Booster:
+                <span id="label-booster-fmt" class="font-mono font-bold text-emerald-400 ml-1">₹0/mo</span>
+              </label>
+              <span id="label-remaining-surplus" class="text-[11px] font-mono text-slate-400">Surplus left: ₹0</span>
+            </div>
+            <input type="range" id="slider-booster" min="0" max="10000" step="500" value="0" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+            <p class="text-[10px] text-slate-400 mt-1">Accelerates highest-APR debt first. When paid, freed EMI rolls forward automatically.</p>
+          </div>
+
+          <!-- Micro-Recovery Options -->
+          <div class="mt-4 p-3 rounded-lg bg-slate-950/60 border border-fin-border">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-slate-300">Micro-Recovery Boosters</span>
+              <span class="text-[10px] text-emerald-400">Adds directly to booster</span>
+            </div>
+            <div class="space-y-2 text-xs" id="micro-recovery-items">
+              <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                <span class="flex items-center gap-2 text-slate-300">
+                  <input type="checkbox" data-amount="1500" class="micro-cb rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                  <span>Trim dining & takeaway orders</span>
+                </span>
+                <span class="font-mono text-emerald-400">+₹1,500</span>
+              </label>
+              <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                <span class="flex items-center gap-2 text-slate-300">
+                  <input type="checkbox" data-amount="800" class="micro-cb rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                  <span>Cancel inactive OTT / subscriptions</span>
+                </span>
+                <span class="font-mono text-emerald-400">+₹800</span>
+              </label>
+              <label class="flex items-center justify-between p-1.5 rounded hover:bg-slate-900 cursor-pointer">
+                <span class="flex items-center gap-2 text-slate-300">
+                  <input type="checkbox" data-amount="3500" class="micro-cb rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                  <span>Weekend gig / freelance income</span>
+                </span>
+                <span class="font-mono text-emerald-400">+₹3,500</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Separate Refinance What-If Tool -->
+          <div class="mt-4 pt-3 border-t border-slate-800">
+            <button type="button" id="btn-toggle-refinance" class="w-full py-1.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-medium text-slate-300 flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span>Refinance What-If Simulator</span>
+              </span>
+              <span id="refinance-toggle-icon" class="text-slate-400">+</span>
+            </button>
+            <div id="refinance-panel" class="hidden mt-3 p-3 rounded-lg bg-slate-950 border border-cyan-900/40 text-xs space-y-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="refinance-new-apr" class="text-[11px] text-slate-400 block">Consolidation APR (%)</label>
+                  <input type="number" id="refinance-new-apr" value="11.5" step="0.25" class="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-right font-mono text-white text-xs" />
+                </div>
+                <div>
+                  <label for="refinance-fee" class="text-[11px] text-slate-400 block">Processing Fee (%)</label>
+                  <input type="number" id="refinance-fee" value="1.0" step="0.25" class="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-right font-mono text-white text-xs" />
+                </div>
+              </div>
+              <div id="refinance-result" class="p-2.5 rounded bg-cyan-950/40 border border-cyan-500/20 text-slate-200">
+                Calculating refinance savings...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. RISK SELECTOR -->
+        <div class="rounded-xl border border-fin-border bg-fin-surface p-4 sm:p-5 shadow">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">4. Risk Strategy</h2>
+            <span id="risk-lock-note" class="text-[11px] text-rose-400 font-medium hidden">High Risk Locked (High APR)</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-3">Defines target asset allocation weights once debts and buffer are secured.</p>
+
+          <div class="grid grid-cols-1 gap-2.5" id="risk-cards-group">
+            <!-- Safety First -->
+            <label id="card-risk-low" class="p-3 rounded-xl border border-fin-border bg-fin-card cursor-pointer hover:border-slate-600 transition flex items-start gap-3">
+              <input type="radio" name="risk-profile" value="low" class="mt-1 text-emerald-500 focus:ring-0" />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white text-xs">Safety First (Capital Preservation)</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">~7.0%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">FD / RD, PPF, Liquid Funds, T-Bills. 100% principal peace-of-mind.</p>
+              </div>
+            </label>
+
+            <!-- Balanced Shield -->
+            <label id="card-risk-moderate" class="p-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 cursor-pointer hover:border-emerald-500 transition flex items-start gap-3">
+              <input type="radio" name="risk-profile" value="moderate" checked class="mt-1 text-emerald-500 focus:ring-0" />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white text-xs">Balanced Shield (All-Weather)</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono">~9.5%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Nifty 50 Index, Sovereign Debt, Gold ETF, REITs. Resilient against inflation shocks.</p>
+              </div>
+            </label>
+
+            <!-- Wealth Accelerator -->
+            <label id="card-risk-high" class="p-3 rounded-xl border border-fin-border bg-fin-card cursor-pointer hover:border-slate-600 transition flex items-start gap-3">
+              <input type="radio" name="risk-profile" value="high" class="mt-1 text-emerald-500 focus:ring-0" />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-white text-xs">Wealth Accelerator (Growth Compounder)</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">~11.5%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Flexi/Mid-Cap SIPs, Bluechips, Gold ETF, REITs. For 7+ year horizon.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: RESULTS & ENGINE OUTPUTS (lg:col-span-7) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- GATEKEEPER STATUS CARD -->
+        <div id="gatekeeper-card" class="rounded-xl border p-5 shadow-xl transition-all">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2">
+              <span id="gate-icon" class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <h2 id="gate-title" class="text-base font-bold text-white">GATE STATUS</h2>
+            </div>
+            <span id="gate-pill" class="px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">GREEN</span>
+          </div>
+          <p id="gate-description" class="text-xs text-slate-300 leading-relaxed"></p>
+
+          <!-- Gate Action Directive Box -->
+          <div id="gate-directive-box" class="mt-3 p-3 rounded-lg bg-slate-900/90 border border-fin-border text-xs">
+            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Surplus Flow Directive</span>
+            <div id="gate-directive-text" class="font-medium text-slate-200"></div>
+          </div>
+
+          <!-- Adjustable Yellow Gate Slider (Buffer vs Basket) -->
+          <div id="yellow-slider-container" class="hidden mt-3 p-3 rounded-lg bg-slate-950 border border-amber-500/30 text-xs">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-amber-300 font-semibold">Customise Yellow Gate Surplus Split:</span>
+              <span id="yellow-split-label" class="font-mono text-white font-bold">70% Buffer / 30% Basket</span>
+            </div>
+            <input type="range" id="slider-yellow-split" min="50" max="100" step="5" value="70" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer" />
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+              <span>50% Buffer / 50% Basket</span>
+              <span>100% Emergency Buffer</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DEBT RECOVERY IMPACT METRICS (If debts exist) -->
+        <div id="debt-recovery-card" class="rounded-xl border border-fin-border bg-fin-surface p-5 shadow">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>Debt Avalanche Payoff Timeline</span>
+                <span id="badge-debt-count" class="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">2 Debts</span>
+              </h2>
+              <p class="text-xs text-slate-400">Baseline (minimums only) vs Accelerated (booster + rolled EMIs)</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center mb-4">
+            <div class="p-3 rounded-lg bg-slate-900/80 border border-fin-border">
+              <span class="text-[10px] uppercase text-slate-400 block font-semibold">Months Saved</span>
+              <span id="metric-months-saved" class="text-xl font-black text-emerald-400 font-mono">--</span>
+              <span id="metric-months-baseline" class="text-[10px] text-slate-500 block">from -- mos baseline</span>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-900/80 border border-fin-border">
+              <span class="text-[10px] uppercase text-slate-400 block font-semibold">Interest Saved</span>
+              <span id="metric-interest-saved" class="text-xl font-black text-emerald-400 font-mono">--</span>
+              <span class="text-[10px] text-slate-500 block">pure cash preserved</span>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-900/80 border border-fin-border">
+              <span class="text-[10px] uppercase text-slate-400 block font-semibold">Debt-Free Target</span>
+              <span id="metric-debtfree-date" class="text-base font-bold text-cyan-300 font-mono mt-0.5 block">--</span>
+              <span id="metric-debtfree-sub" class="text-[10px] text-slate-500 block">zero debt status</span>
+            </div>
+          </div>
+
+          <div id="debt-warning-container" class="space-y-2"></div>
+        </div>
+
+        <!-- CHARTS SECTION: CASHFLOW DOUGHNUT & 60-MONTH WATERFALL -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Doughnut Chart: Monthly Cashflow -->
+          <div class="rounded-xl border border-fin-border bg-fin-surface p-4 shadow flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Monthly Cashflow Split</h3>
+                <span id="doughnut-total-badge" class="text-[10px] font-mono text-slate-400">Total: ₹--</span>
+              </div>
+              <p class="text-[11px] text-slate-400 mb-3">Expenses, EMIs, Buffer & Investments</p>
+            </div>
+
+            <div class="relative w-full aspect-square max-h-56 mx-auto flex items-center justify-center">
+              <canvas id="cashflow-doughnut-canvas" class="w-full h-full" aria-label="Monthly cashflow doughnut chart" role="img"></canvas>
+              <!-- Center Total Overlay -->
+              <div id="doughnut-center-text" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold">In-Hand</span>
+                <span id="doughnut-center-amount" class="text-sm font-extrabold text-white font-mono">₹30,000</span>
+              </div>
+            </div>
+
+            <!-- Accessible fallback table for screen readers or CDN failures -->
+            <div id="doughnut-fallback-table" class="mt-3 text-[11px] text-slate-300 border-t border-slate-800 pt-2 space-y-1">
+              <!-- populated dynamically -->
+            </div>
+          </div>
+
+          <!-- 60-Month Projection Chart -->
+          <div class="rounded-xl border border-fin-border bg-fin-surface p-4 shadow flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">60-Month Waterfall</h3>
+                <div class="flex items-center gap-1 bg-slate-900 p-0.5 rounded border border-fin-border text-[10px]">
+                  <button type="button" id="btn-chart-nominal" class="px-2 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-300">Nominal</button>
+                  <button type="button" id="btn-chart-real" class="px-2 py-0.5 rounded text-slate-400 hover:text-white">Real (Inflation)</button>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-400 mb-3">Debt Payoff → Buffer → Wealth Accumulation</p>
+            </div>
+
+            <div class="relative w-full aspect-square max-h-56 mx-auto flex items-center justify-center">
+              <canvas id="projection-line-canvas" class="w-full h-full" aria-label="60-month waterfall chart" role="img"></canvas>
+            </div>
+
+            <!-- Projection Accessible summary -->
+            <div id="projection-fallback-summary" class="mt-3 text-[11px] text-slate-300 border-t border-slate-800 pt-2 space-y-1">
+              <!-- populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTI-ASSET ALLOCATION CARDS (Minimum-ticket merged) -->
+        <div class="rounded-xl border border-fin-border bg-fin-surface p-5 shadow">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>Multi-Asset Monthly Allocation</span>
+                <span id="alloc-ticket-badge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">₹500 min-ticket merged</span>
+              </h2>
+              <p class="text-xs text-slate-400" id="alloc-basket-subtitle">Based on your risk profile and surplus gate</p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-400 uppercase block">Monthly Investable</span>
+              <span id="alloc-total-investable" class="text-sm font-black text-emerald-400 font-mono">₹0/mo</span>
+            </div>
+          </div>
+
+          <!-- Cards Grid -->
+          <div id="allocation-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Dynamic asset cards -->
+          </div>
+
+          <!-- Expected Returns Box -->
+          <div class="mt-5 p-4 rounded-xl bg-slate-950/80 border border-fin-border">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Expected Portfolio Return (Weighted)</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono" id="config-reviewed-badge">Reviewed Nov 2026</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs">
+                <label for="input-inflation" class="text-slate-400 text-[11px]">Inflation:</label>
+                <input type="number" id="input-inflation" value="6.0" step="0.5" min="2" max="15" class="w-14 px-1.5 py-0.5 bg-slate-900 border border-fin-border rounded text-right font-mono text-white text-xs" />
+                <span class="text-slate-400 text-[11px]">%</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs mt-3">
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-fin-border">
+                <span class="text-[10px] text-slate-400 uppercase block">Conservative (-3%)</span>
+                <span id="rate-conservative" class="font-mono font-bold text-slate-300 text-sm">--%</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-emerald-500/30 bg-emerald-950/10">
+                <span class="text-[10px] text-emerald-400 uppercase block font-semibold">Base Case</span>
+                <span id="rate-base" class="font-mono font-black text-emerald-300 text-sm">--%</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-fin-border">
+                <span class="text-[10px] text-slate-400 uppercase block">Optimistic (+3%)</span>
+                <span id="rate-optimistic" class="font-mono font-bold text-slate-300 text-sm">--%</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-cyan-500/30 bg-cyan-950/10">
+                <span class="text-[10px] text-cyan-400 uppercase block font-semibold">Real Return (Post-Infl.)</span>
+                <span id="rate-real" class="font-mono font-black text-cyan-300 text-sm">--%</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-2">
+              *Real return calculated using Fisher equation: ((1 + nominal) / (1 + inflation)) - 1. Returns are historical assumptions, not guaranteed.
+            </p>
+          </div>
+
+          <!-- SEBI / Statutory Disclaimer -->
+          <div class="mt-4 p-3 rounded-lg bg-slate-900/40 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
+            <span class="font-bold text-slate-300">Disclaimer:</span> This planner is strictly for educational and personal financial planning purposes. Not SEBI-registered investment advice. Mutual fund investments are subject to market risks; read all scheme-related documents carefully. Verify current tax rates under your applicable regime before executing.
+          </div>
+        </div>
+
+        <!-- 5. MACRO RADAR (Evergreen Explanations + Optional Live Fetch) -->
+        <div class="rounded-xl border border-fin-border bg-fin-surface p-5 shadow">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <span>5. Macro Radar & Decision Context</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">Illustrative / Educational</span>
+              </h2>
+              <p class="text-xs text-slate-400">Evergreen Indian macroeconomic drivers and what they mean for your wallet</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="btn-toggle-macro-all" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-900 border border-fin-border">
+                Filter: <span id="macro-filter-label" class="text-emerald-400 font-semibold">For Your Risk</span>
+              </button>
+              <button type="button" id="btn-toggle-macro-custom" class="text-xs text-slate-400 hover:text-cyan-300 px-2 py-1 rounded bg-slate-900 border border-fin-border" title="Optional live RSS/JSON feed fetch">
+                + Live Feed
+              </button>
+            </div>
+          </div>
+
+          <!-- Optional Live RSS/JSON URL Drawer -->
+          <div id="macro-custom-box" class="hidden mb-4 p-3 rounded-lg bg-slate-950 border border-fin-border space-y-2 text-xs">
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-200">Fetch Custom Macro News Feed</span>
+              <span class="text-[10px] text-slate-400">6s timeout • 30m cache</span>
+            </div>
+            <div class="flex gap-2">
+              <input type="url" id="input-macro-url" placeholder="https://example.com/finance-feed.json or rss" class="flex-1 px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded text-xs text-slate-200" />
+              <button type="button" id="btn-fetch-feed" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded text-xs">Fetch</button>
+            </div>
+            <div class="pt-1">
+              <label for="input-gemini-key" class="text-[10px] text-slate-400 block mb-0.5">Optional Gemini API Key (stored strictly in your browser localStorage):</label>
+              <input type="password" id="input-gemini-key" placeholder="AIzaSy... (optional for AI summaries)" class="w-full px-2 py-1 bg-slate-900 border border-slate-800 rounded text-xs text-slate-300 font-mono" />
+              <span class="text-[10px] text-amber-400/80 block mt-0.5">Never shared. Key remains strictly on this device.</span>
+            </div>
+            <div id="macro-fetch-status" class="text-[11px] text-slate-400"></div>
+          </div>
+
+          <!-- Macro Cards Grid -->
+          <div id="macro-cards-container" class="space-y-3">
+            <!-- Dynamic Macro items -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================== STICKY MOBILE BOTTOM BAR ======================== -->
+  <aside class="sticky-bar fixed bottom-0 left-0 right-0 z-30 bg-fin-surface/95 border-t border-fin-border p-3 md:hidden backdrop-blur flex items-center justify-between text-xs shadow-2xl" aria-label="Mobile summary">
+    <div>
+      <span class="text-[10px] text-slate-400 uppercase font-semibold block">Net Worth:</span>
+      <span id="mobile-net-worth" class="font-mono font-bold text-emerald-400 text-sm">₹0</span>
+    </div>
+    <div class="text-center">
+      <span class="text-[10px] text-slate-400 uppercase font-semibold block">Net Surplus:</span>
+      <span id="mobile-surplus" class="font-mono font-bold text-slate-200 text-sm">₹0</span>
+    </div>
+    <div class="text-right">
+      <span id="mobile-gate-pill" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">GREEN</span>
+    </div>
+  </aside>
+
+  <!-- ======================== FOOTER ======================== -->
+  <footer class="border-t border-fin-border bg-fin-surface/60 mt-12 py-8 px-4 text-xs text-slate-500 text-center space-y-2">
+    <p>FinPilot – Built client-side for Indian earners. All calculations execute locally in your browser memory.</p>
+    <p>Educational utility only. Not financial or SEBI-registered investment advice. Past performance is no guarantee of future returns.</p>
+    <p class="text-[11px] text-slate-600">Privacy Guaranteed • LocalStorage Schema v1 • Pinned CDN Engine</p>
+  </footer>
+
+  <!-- ======================== MODAL: ADD / EDIT DEBT ======================== -->
+  <div id="debt-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-fin-surface border border-fin-border rounded-xl p-5 w-full max-w-md shadow-2xl text-xs space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 id="debt-modal-title" class="text-sm font-bold text-white">Add Debt Item</h3>
+        <button id="btn-close-debt-modal" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="debt-input-name" class="block text-slate-300 font-medium mb-1">Debt / Lender Name</label>
+          <input type="text" id="debt-input-name" placeholder="e.g. HDFC Credit Card, Personal Loan" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-white text-xs" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="debt-input-principal" class="block text-slate-300 font-medium mb-1">Outstanding (₹)</label>
+            <input type="number" id="debt-input-principal" min="1000" step="1000" placeholder="85000" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono text-white text-xs" />
+          </div>
+          <div>
+            <label for="debt-input-apr" class="block text-slate-300 font-medium mb-1">APR (% per annum)</label>
+            <input type="number" id="debt-input-apr" min="1" max="60" step="0.5" placeholder="36" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono text-white text-xs" />
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label for="debt-input-emi" class="text-slate-300 font-medium">Minimum Monthly EMI (₹)</label>
+            <span class="text-[10px] text-slate-400">Leave blank to auto-estimate</span>
+          </div>
+          <input type="number" id="debt-input-emi" min="0" step="100" placeholder="Optional (leave empty for auto)" class="w-full px-2.5 py-1.5 bg-slate-900 border border-fin-border rounded text-right font-mono text-white text-xs" />
+          <p class="text-[10px] text-slate-400 mt-1">If blank: Credit cards estimate @ 5% balance; loans estimate 36-mo amortization.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button id="btn-cancel-debt-modal" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Cancel</button>
+        <button id="btn-save-debt-modal" class="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold">Save Debt</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ======================== CORE APPLICATION SCRIPT ======================== -->
+  <script>
+    /**
+     * FinPilot – Single-File Architecture
+     * Organised into 6 clean phases:
+     *   1. CONFIG
+     *   2. STATE
+     *   3. PURE CALC FUNCTIONS (No DOM access)
+     *   4. RENDER
+     *   5. EVENTS
+     *   6. SELF-TESTS
+     */
+
+    // ==========================================
+    // === 1. CONFIG ============================
+    // ==========================================
+    const CONFIG = {
+      APP_VERSION: 1,
+      STORAGE_KEY: 'finpilot_state_v1',
+      LAST_REVIEWED_DATE: 'Nov 2026',
+      DEFAULT_INFLATION_RATE: 6.0, // 6% India average CPI baseline
+
+      // Gatekeeper Thresholds
+      GATE_THRESHOLDS: {
+        RED_APR: 12.0,       // Debts with APR >= 12% trigger RED mode
+        ORANGE_APR: 8.0,     // Debts between 8% and 12% trigger ORANGE mode
+        GREEN_MAX_APR: 8.0,  // Debts < 8% continue at minimums in GREEN mode
+        STARTER_BUFFER_MONTHS: 1.0 // 1 month of essential expenses required first
+      },
+
+      // Return assumptions (% p.a.) reviewed Nov 2026
+      ASSET_RETURNS: {
+        NIFTY_INDEX: 12.0,
+        FLEXI_EQUITY: 12.5,
+        GOLD_ETF: 9.0,
+        DEBT_GILT: 7.0,
+        FD_RD: 7.0,
+        PPF: 7.1,
+        TBILLS: 6.8,
+        LIQUID_FUND: 6.5,
+        REIT_INVIT: 8.5
+      },
+
+      // Multi-Asset Allocation Matrices (Percentages sum to 100)
+      ALLOCATION_MATRICES: {
+        low: [
+          { key: 'FD_RD', name: 'Fixed / Recurring Deposit', share: 40, returnKey: 'FD_RD', liquidity: '1-3 days', buyGuide: 'NetBanking / DICGC Insured banks up to ₹5L', taxNote: 'Taxed at personal slab rate' },
+          { key: 'PPF', name: 'Public Provident Fund (PPF)', share: 30, returnKey: 'PPF', liquidity: 'Locked (15y)', buyGuide: 'Post Office or major bank (max ₹1.5L/yr)', taxNote: 'Exempt-Exempt-Exempt (EEE)' },
+          { key: 'LIQUID_FUND', name: 'Liquid / Arbitrage Mutual Fund', share: 20, returnKey: 'LIQUID_FUND', liquidity: 'Instant (₹50k/day)', buyGuide: 'Direct Plan via AMC / Zerodha / Groww', taxNote: 'Arbitrage equity taxed (12.5% LTCG); Debt slab' },
+          { key: 'TBILLS', name: 'Treasury Bills (T-Bills) / Bharat Bond', share: 10, returnKey: 'TBILLS', liquidity: '1-2 days', buyGuide: 'RBI Retail Direct portal (zero fee)', taxNote: 'Taxed as short-term capital gains at slab' }
+        ],
+        moderate: [
+          { key: 'NIFTY_INDEX', name: 'Nifty 50 Index Fund (Direct)', share: 35, returnKey: 'NIFTY_INDEX', liquidity: '2-3 days', buyGuide: 'Direct Plan, low tracking error (<0.05%)', taxNote: 'LTCG 12.5% above ₹1.25L gain/year; STCG 20%' },
+          { key: 'GOLD_ETF', name: 'Gold ETF / Gold Mutual Fund', share: 25, returnKey: 'GOLD_ETF', liquidity: '1-2 days', buyGuide: 'Demat / Direct Fund (avoid physical coins)', taxNote: 'LTCG 12.5% held >24 months' },
+          { key: 'DEBT_GILT', name: 'Target Maturity Gilt / Debt Fund', share: 25, returnKey: 'DEBT_GILT', liquidity: '1-3 days', buyGuide: 'Direct Plan investing in Sovereign securities', taxNote: 'Taxed at personal slab rate' },
+          { key: 'REIT_INVIT', name: 'REITs / Infrastructure InvITs', share: 15, returnKey: 'REIT_INVIT', liquidity: '1-2 days', buyGuide: 'Listed units on NSE (Embassy, Nexus, Brookfield)', taxNote: 'Dividend & interest taxed per payout stream' }
+        ],
+        high: [
+          { key: 'FLEXI_EQUITY', name: 'Flexi-Cap & Mid-Cap Index (Direct)', share: 60, returnKey: 'FLEXI_EQUITY', liquidity: '2-3 days', buyGuide: 'Direct Growth Plan via Zerodha Coin / Groww / MF Central', taxNote: 'LTCG 12.5% above ₹1.25L gain/year; STCG 20%' },
+          { key: 'GOLD_ETF', name: 'Gold ETF (Inflation Shield)', share: 15, returnKey: 'GOLD_ETF', liquidity: '1-2 days', buyGuide: 'NSE Listed Gold ETF (Nippon / HDFC / ICICI)', taxNote: 'LTCG 12.5% held >24 months' },
+          { key: 'REIT_INVIT', name: 'Commercial REIT / Infrastructure Trust', share: 15, returnKey: 'REIT_INVIT', liquidity: '1-2 days', buyGuide: 'Dematerialized units on NSE/BSE', taxNote: 'Pass-through yield components' },
+          { key: 'LIQUID_FUND', name: 'Liquid Anchor / Overnight Fund', share: 10, returnKey: 'LIQUID_FUND', liquidity: 'Instant', buyGuide: 'Direct Plan overnight/liquid parking', taxNote: 'Slab rate on redemption' }
+        ]
+      },
+
+      // Built-in Evergreen Macro Context Cards (Labelled Sample / Illustrative)
+      EVERGREEN_MACRO: [
+        {
+          id: 'macro-1',
+          title: 'RBI Repo Rate Policy Stance & Yield Curve',
+          tag: 'rates',
+          secondaryTag: 'fd',
+          text: 'The Reserve Bank of India modulates the benchmark repo rate to calibrate inflation against economic growth. When repo rates are elevated, bank Fixed Deposits and Liquid funds offer peak risk-free yields.',
+          meaning: 'Lock in high-yield Fixed Deposits or multi-year FDs now before rate-cut cycles compress fresh deposit rates.'
+        },
+        {
+          id: 'macro-2',
+          title: 'Gold as Sovereign Hedge & Currency Cushion',
+          tag: 'gold',
+          secondaryTag: 'inflation',
+          text: 'Central banks globally continue acquiring gold reserves amidst geopolitical friction and currency realignments. Note: Primary issuances of Sovereign Gold Bonds (SGBs) have ceased; use Gold ETFs or FoFs for zero-making-loss allocation.',
+          meaning: 'Keep a disciplined 10% to 25% allocation in Gold ETFs to cushion your portfolio against Rupee depreciation and global shocks.'
+        },
+        {
+          id: 'macro-3',
+          title: 'Equity Valuations & Rupee Cost Averaging',
+          tag: 'equity',
+          secondaryTag: 'tax',
+          text: 'Indian headline indices frequently trade at slight valuation premiums due to persistent domestic retail SIP inflows (>₹20,000 Cr/month). Lump sums into equity carry sequence-of-returns risk.',
+          meaning: 'Do not time markets with lump sums. Stick to automated monthly SIPs to average out volatility.'
+        },
+        {
+          id: 'macro-4',
+          title: 'Inflation & Real Post-Tax Purchasing Power',
+          tag: 'inflation',
+          secondaryTag: 'rates',
+          text: 'With retail CPI inflation typically hovering around 5% to 6%, any traditional savings account or post office savings earning 3.5% actually loses purchasing power every single year.',
+          meaning: 'Safe assets protect your emergency buffer, but your long-term wealth must hold equity index and gold to beat real inflation.'
+        },
+        {
+          id: 'macro-5',
+          title: 'Tax Parity on Debt Funds & New Tax Regime',
+          tag: 'tax',
+          secondaryTag: 'fd',
+          text: 'Under the Finance Act amendments, pure debt mutual funds no longer enjoy indexation benefits and are taxed at slab rates. Furthermore, Section 80C and 80CCD(1B) provide zero deductions under the New Tax Regime.',
+          meaning: 'If you opt for the New Regime, ignore tax-saving lock-in schemes like ELSS or NPS solely for deduction; invest purely for risk-adjusted returns.'
+        }
+      ]
+    };
+
+    // ==========================================
+    // === 2. STATE =============================
+    // ==========================================
+    const DEFAULT_STATE = {
+      v: CONFIG.APP_VERSION,
+      incomeType: 'salaried', // 'salaried' | 'irregular'
+      income: 30000,
+      expenses: 18000,
+      dependents: 0,
+      savings: 25000,         // Emergency buffer / liquid cash
+      healthInsurance: '5LorMore', // 'none' | 'under5L' | '5LorMore'
+      termInsurance: 'yes',        // 'yes' | 'no'
+      taxRegime: 'new',            // 'new' | 'old'
+      riskProfile: 'moderate',     // 'low' | 'moderate' | 'high'
+      booster: 0,
+      yellowBufferSplit: 70,       // 70% buffer / 30% basket when in Yellow Gate
+      inflationRate: 6.0,
+      chartNominal: true,          // true = Nominal, false = Real (inflation-adjusted)
+      macroShowAll: false,
+      macroUrl: '',
+      geminiKey: '',
+      debts: [],                   // Array of { id, name, principal, apr, emi, estimated: bool }
+      assets: {
+        mutualFundsEquity: 15000,
+        epfPpf: 30000,
+        gold: 20000,
+        realEstateOther: 0
+      },
+      microRecoverySelections: {
+        dining: false,
+        subscriptions: false,
+        gig: false
+      }
+    };
+
+    let AppState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+    // Chart instances references
+    let cashflowChartInstance = null;
+    let projectionChartInstance = null;
+    let debounceTimer = null;
+
+
+    // ==========================================
+    // === 3. PURE CALC FUNCTIONS ===============
+    // (No DOM access, strictly testable & pure)
+    // ==========================================
+
+    /**
+     * Calculates Net Worth: Total Tracked Assets minus Total Liabilities
+     */
+    function calculateNetWorth(state) {
+      const savings = Math.max(0, Number(state.savings) || 0);
+      const mfEquity = Math.max(0, Number(state.assets?.mutualFundsEquity) || 0);
+      const epfPpf = Math.max(0, Number(state.assets?.epfPpf) || 0);
+      const gold = Math.max(0, Number(state.assets?.gold) || 0);
+      const realEstateOther = Math.max(0, Number(state.assets?.realEstateOther) || 0);
+
+      const totalAssets = savings + mfEquity + epfPpf + gold + realEstateOther;
+
+      const totalLiabilities = (state.debts || []).reduce((sum, d) => {
+        return sum + Math.max(0, Number(d.principal) || 0);
+      }, 0);
+
+      const netWorth = totalAssets - totalLiabilities;
+      const debtToAssetRatio = totalAssets > 0
+        ? Number(((totalLiabilities / totalAssets) * 100).toFixed(1))
+        : (totalLiabilities > 0 ? 100 : 0);
+
+      return {
+        savings,
+        mfEquity,
+        epfPpf,
+        gold,
+        realEstateOther,
+        totalAssets,
+        totalLiabilities,
+        netWorth,
+        debtToAssetRatio,
+        isNegative: netWorth < 0
+      };
+    }
+
+    /**
+     * Calculates adjusted monthly income based on employment stability.
+     * Irregular planners base cashflows on 70% of entered income.
+     */
+    function calculateAdjustedIncome(income, incomeType) {
+      const clampedIncome = Math.max(0, Number(income) || 0);
+      return incomeType === 'irregular' ? clampedIncome * 0.70 : clampedIncome;
+    }
+
+    /**
+     * Standard monthly EMI calculation using proper amortization formula:
+     * EMI = [P * r * (1 + r)^n] / [(1 + r)^n - 1]
+     */
+    function calculateEMI(principal, annualApr, tenureMonths) {
+      const P = Number(principal) || 0;
+      const apr = Number(annualApr) || 0;
+      const n = Math.max(1, Number(tenureMonths) || 1);
+
+      if (P <= 0) return 0;
+      if (apr <= 0) return P / n;
+
+      const r = (apr / 100) / 12; // Monthly rate
+      const compoundFactor = Math.pow(1 + r, n);
+      const emi = (P * r * compoundFactor) / (compoundFactor - 1);
+      return Number(emi.toFixed(2));
+    }
+
+    /**
+     * Auto-estimates EMI when user leaves it blank:
+     * - Credit cards (or APR >= 30): 5% of balance as minimum due
+     * - Loans: 36-month amortisation at specified APR
+     */
+    function calculateEstimatedEmi(principal, apr, debtName = '') {
+      const P = Number(principal) || 0;
+      const rate = Number(apr) || 0;
+      const isCard = debtName.toLowerCase().includes('card') || rate >= 30;
+
+      if (P <= 0) return 0;
+      if (isCard) {
+        // Credit card 5% minimum due
+        return Math.max(500, Math.round(P * 0.05));
+      }
+      // 36 months amortisation
+      return Math.round(calculateEMI(P, rate, 36));
+    }
+
+    /**
+     * Calculates total minimum EMIs for all active debts
+     */
+    function calculateTotalMinEmi(debts) {
+      if (!Array.isArray(debts)) return 0;
+      return debts.reduce((sum, d) => {
+        const emi = d.emi !== undefined && d.emi !== null && d.emi !== ''
+          ? Number(d.emi)
+          : calculateEstimatedEmi(d.principal, d.apr, d.name);
+        return sum + Math.max(0, emi);
+      }, 0);
+    }
+
+    /**
+     * Calculates monthly unallocated surplus:
+     * Adjusted Income - Essential Expenses - Total Minimum EMIs
+     */
+    function calculateSurplus(income, incomeType, expenses, debts) {
+      const adjIncome = calculateAdjustedIncome(income, incomeType);
+      const essential = Math.max(0, Number(expenses) || 0);
+      const totalEmis = calculateTotalMinEmi(debts);
+      const rawSurplus = adjIncome - essential - totalEmis;
+      return {
+        adjustedIncome: adjIncome,
+        expenses: essential,
+        totalMinEmis: totalEmis,
+        rawSurplus: Math.round(rawSurplus),
+        isDeficit: rawSurplus < 0,
+        availableSurplus: Math.max(0, Math.round(rawSurplus))
+      };
+    }
+
+    /**
+     * Emergency fund target months based on dependents and income risk:
+     * - 3 months base
+     * - 4 months if dependents > 0
+     * - 6 months if irregular income
+     */
+    function calculateTargetMonths(dependents, incomeType) {
+      let months = 3;
+      if (Number(dependents) > 0) months = 4;
+      if (incomeType === 'irregular') months = 6;
+      return months;
+    }
+
+    function calculateTargetBuffer(expenses, dependents, incomeType) {
+      const months = calculateTargetMonths(dependents, incomeType);
+      return months * Math.max(0, Number(expenses) || 0);
+    }
+
+    /**
+     * Gatekeeper Decision Engine (First Match Wins!)
+     * Priority: Safety > Correctness > Growth
+     */
+    function determineGatekeeper(state) {
+      const debts = Array.isArray(state.debts) ? state.debts : [];
+      const currentSavings = Math.max(0, Number(state.savings) || 0);
+      const expenses = Math.max(0, Number(state.expenses) || 0);
+      const starterTarget = CONFIG.GATE_THRESHOLDS.STARTER_BUFFER_MONTHS * expenses;
+      const targetBuffer = calculateTargetBuffer(expenses, state.dependents, state.incomeType);
+
+      // Find max APR among active debts with balance > 0
+      const activeDebts = debts.filter(d => Number(d.principal) > 0);
+      let maxApr = 0;
+      activeDebts.forEach(d => {
+        if (Number(d.apr) > maxApr) maxApr = Number(d.apr);
+      });
+
+      // Check Starter Buffer condition
+      const hasStarterBuffer = currentSavings >= starterTarget;
+
+      // Gate a: RED (debt APR >= 12%)
+      if (maxApr >= CONFIG.GATE_THRESHOLDS.RED_APR) {
+        return {
+          status: 'RED',
+          title: 'Debt Recovery Mode (RED ALERT)',
+          color: 'rose',
+          maxApr,
+          lockHighRisk: true,
+          needsStarterBuffer: !hasStarterBuffer,
+          starterTarget,
+          targetBuffer,
+          summary: `High-interest debt detected (${maxApr}% APR). Paying this off gives a guaranteed, risk-free ${maxApr}% post-tax return. Equity markets carry high volatility.`,
+          directive: !hasStarterBuffer
+            ? `PRIORITY 1: Channel surplus into starter liquid savings until ₹${formatINR(starterTarget)} is reached (to prevent new card debt). Then 100% of surplus attacks the ${maxApr}% loan.`
+            : `100% of unallocated surplus goes directly into the highest-APR loan (Debt Avalanche). High-Risk portfolio is locked.`
+        };
+      }
+
+      // Gate b: ORANGE (debt APR between 8% and 12%)
+      if (maxApr >= CONFIG.GATE_THRESHOLDS.ORANGE_APR) {
+        return {
+          status: 'ORANGE',
+          title: 'Balanced Payoff & Shield (ORANGE)',
+          color: 'amber',
+          maxApr,
+          lockHighRisk: false,
+          needsStarterBuffer: !hasStarterBuffer,
+          starterTarget,
+          targetBuffer,
+          summary: `Moderate debt detected (${maxApr}% APR). Split your focus evenly between accelerated payoff and building resilience.`,
+          directive: !hasStarterBuffer
+            ? `Fund your 1-month liquid starter buffer first, then split surplus: 50% to debt payoff and 50% to your emergency reserve.`
+            : `Split surplus: 50% towards accelerated payoff of the ${maxApr}% debt, and 50% towards your liquid buffer / balanced investments.`
+        };
+      }
+
+      // Gate c: YELLOW (Emergency savings below full target)
+      if (currentSavings < targetBuffer) {
+        const userBufferPct = Math.min(100, Math.max(50, Number(state.yellowBufferSplit) || 70));
+        const basketPct = 100 - userBufferPct;
+
+        return {
+          status: 'YELLOW',
+          title: !hasStarterBuffer ? 'Starter Buffer Critical (YELLOW)' : 'Emergency Cushion Building (YELLOW)',
+          color: 'amber',
+          maxApr,
+          lockHighRisk: false,
+          needsStarterBuffer: !hasStarterBuffer,
+          starterTarget,
+          targetBuffer,
+          yellowBufferPct: !hasStarterBuffer ? 100 : userBufferPct,
+          yellowBasketPct: !hasStarterBuffer ? 0 : basketPct,
+          summary: `Current savings (₹${formatINR(currentSavings)}) are below your ${calculateTargetMonths(state.dependents, state.incomeType)}-month emergency runway target (₹${formatINR(targetBuffer)}).`,
+          directive: !hasStarterBuffer
+            ? `100% of surplus must flow to liquid/FD buffer until you reach 1 full month of expenses (₹${formatINR(starterTarget)}).`
+            : `${userBufferPct}% of surplus builds your liquid buffer; ${basketPct}% enters your chosen portfolio (${state.riskProfile === 'low' ? '100% Safe assets' : state.riskProfile + ' basket'}).`
+        };
+      }
+
+      // Gate d: GREEN (Emergency buffer complete, all debt < 8%)
+      return {
+        status: 'GREEN',
+        title: 'Multi-Asset Wealth Accelerator (GREEN)',
+        color: 'emerald',
+        maxApr,
+        lockHighRisk: false,
+        needsStarterBuffer: false,
+        starterTarget,
+        targetBuffer,
+        summary: `Your emergency moat is fully funded (₹${formatINR(currentSavings)} / ₹${formatINR(targetBuffer)}) and toxic debts are cleared. Low-rate debts (<8%) continue safely at minimum EMIs.`,
+        directive: `100% of surplus flows into your chosen diversified multi-asset portfolio.`
+      };
+    }
+
+    /**
+     * Multi-Asset Allocation Calculation with Minimum Ticket Rule:
+     * If an individual asset's monthly allocation is under ₹500, merge it into
+     * the primary liquid or equity index anchor. No displayed card will be < ₹500!
+     */
+    function calculateAssetAllocation(investableMonthly, riskProfile, gatekeeper) {
+      const investable = Math.max(0, Math.round(Number(investableMonthly) || 0));
+      if (investable <= 0) return [];
+
+      let matrix = CONFIG.ALLOCATION_MATRICES[riskProfile] || CONFIG.ALLOCATION_MATRICES.moderate;
+
+      // In Yellow Gate, if risk profile is Low, keep it 100% safe
+      if (gatekeeper.status === 'YELLOW' && riskProfile === 'low') {
+        matrix = CONFIG.ALLOCATION_MATRICES.low;
+      }
+
+      // Calculate initial raw amounts
+      let items = matrix.map(item => {
+        let share = item.share;
+        // PPF card cap rule: PPF cannot exceed 30% of basket
+        if (item.key === 'PPF' && share > 30) share = 30;
+
+        const rawAmount = Math.round((investable * share) / 100);
+        return {
+          ...item,
+          share,
+          rawAmount,
+          finalAmount: rawAmount,
+          merged: false
+        };
+      });
+
+      // Apply Minimum Ticket Rule: merge items < ₹500 into the anchor asset
+      const MIN_TICKET = 500;
+      let smallSum = 0;
+      const anchor = items[0]; // Primary asset (e.g. Nifty 50 or FD/Liquid)
+
+      const qualified = [];
+      items.forEach(item => {
+        if (item.rawAmount < MIN_TICKET) {
+          smallSum += item.rawAmount;
+        } else {
+          qualified.push(item);
+        }
+      });
+
+      if (qualified.length === 0) {
+        // Entire investable amount is small (< ₹500) or all split small -> merge everything into anchor
+        return [{
+          ...anchor,
+          share: 100,
+          finalAmount: investable,
+          mergedNotice: 'Consolidated into single micro-ticket asset (₹500 min rule)'
+        }];
+      }
+
+      // Add merged small amounts to anchor
+      qualified[0].finalAmount += smallSum;
+
+      // Recalculate display percentages to sum to 100%
+      const totalFinal = qualified.reduce((acc, i) => acc + i.finalAmount, 0);
+      return qualified.map(q => ({
+        ...q,
+        share: Math.round((q.finalAmount / totalFinal) * 100)
+      }));
+    }
+
+    /**
+     * Calculates weighted average expected returns and real post-inflation returns
+     */
+    function calculatePortfolioReturns(allocationItems, inflationRate) {
+      const infl = Number(inflationRate) || CONFIG.DEFAULT_INFLATION_RATE;
+      if (!allocationItems || allocationItems.length === 0) {
+        return { base: 0, conservative: 0, optimistic: 0, real: 0 };
+      }
+
+      let weightedSum = 0;
+      let totalAmount = 0;
+
+      allocationItems.forEach(item => {
+        const assetReturn = CONFIG.ASSET_RETURNS[item.returnKey] || 8.0;
+        weightedSum += assetReturn * item.finalAmount;
+        totalAmount += item.finalAmount;
+      });
+
+      const baseRate = totalAmount > 0 ? Number((weightedSum / totalAmount).toFixed(1)) : 8.0;
+      const conservative = Math.max(0, Number((baseRate - 3.0).toFixed(1)));
+      const optimistic = Number((baseRate + 3.0).toFixed(1));
+
+      // Fisher Real Return: ((1 + r) / (1 + i)) - 1
+      const r = baseRate / 100;
+      const i = infl / 100;
+      const realRate = Number((((1 + r) / (1 + i) - 1) * 100).toFixed(1));
+
+      return {
+        base: baseRate,
+        conservative,
+        optimistic,
+        real: realRate
+      };
+    }
+
+    /**
+     * Debt Amortization Simulator (Baseline vs Accelerated Avalanche)
+     * Simulates month-by-month payoff up to 600 months.
+     */
+    function simulateDebtPayoff(debts, boosterAmount) {
+      if (!Array.isArray(debts) || debts.length === 0) {
+        return {
+          hasDebt: false,
+          baselineMonths: 0,
+          acceleratedMonths: 0,
+          monthsSaved: 0,
+          baselineInterest: 0,
+          acceleratedInterest: 0,
+          interestSaved: 0,
+          debtFreeDate: 'No active debts',
+          neverPaysWarning: false
+        };
+      }
+
+      const activeDebts = debts
+        .filter(d => Number(d.principal) > 0)
+        .map(d => ({
+          id: d.id,
+          name: d.name,
+          principal: Number(d.principal),
+          apr: Number(d.apr),
+          emi: d.emi ? Number(d.emi) : calculateEstimatedEmi(d.principal, d.apr, d.name)
+        }));
+
+      if (activeDebts.length === 0) {
+        return {
+          hasDebt: false,
+          baselineMonths: 0,
+          acceleratedMonths: 0,
+          monthsSaved: 0,
+          baselineInterest: 0,
+          acceleratedInterest: 0,
+          interestSaved: 0,
+          debtFreeDate: 'No active debts',
+          neverPaysWarning: false
+        };
+      }
+
+      // Check for payment <= monthly interest warning
+      let neverPaysWarning = false;
+      activeDebts.forEach(d => {
+        const monthlyRate = (d.apr / 100) / 12;
+        const interestOnly = d.principal * monthlyRate;
+        if (d.emi <= interestOnly) {
+          neverPaysWarning = true;
+        }
+      });
+
+      // 1. Simulate Baseline (each debt paid with its minimum EMI only)
+      let baselineMonths = 0;
+      let baselineInterest = 0;
+      let bDebts = activeDebts.map(d => ({ ...d }));
+
+      while (bDebts.some(d => d.principal > 0) && baselineMonths < 600) {
+        baselineMonths++;
+        bDebts.forEach(d => {
+          if (d.principal <= 0) return;
+          const r = (d.apr / 100) / 12;
+          const interest = d.principal * r;
+          baselineInterest += interest;
+          const principalPortion = Math.min(d.principal, Math.max(0, d.emi - interest));
+          d.principal -= principalPortion;
+        });
+      }
+
+      // 2. Simulate Accelerated Avalanche (Booster + freed EMIs rolled into highest APR)
+      let acceleratedMonths = 0;
+      let acceleratedInterest = 0;
+      let aDebts = activeDebts
+        .map(d => ({ ...d }))
+        .sort((a, b) => b.apr - a.apr); // Sort descending by APR for avalanche
+
+      const booster = Math.max(0, Number(boosterAmount) || 0);
+
+      while (aDebts.some(d => d.principal > 0) && acceleratedMonths < 600) {
+        acceleratedMonths++;
+        let freedEmiSum = 0;
+
+        // Pay minimum interest & principal on each
+        aDebts.forEach(d => {
+          if (d.principal <= 0) {
+            freedEmiSum += d.emi;
+            return;
+          }
+          const r = (d.apr / 100) / 12;
+          const interest = d.principal * r;
+          acceleratedInterest += interest;
+          const normalPrincipalPay = Math.min(d.principal, Math.max(0, d.emi - interest));
+          d.principal -= normalPrincipalPay;
+
+          if (d.principal <= 0) {
+            d.principal = 0;
+          }
+        });
+
+        // Apply booster + rolled-over freed EMIs to the debt with highest APR that still has balance
+        let extraPayment = booster + freedEmiSum;
+        for (let d of aDebts) {
+          if (d.principal > 0 && extraPayment > 0) {
+            const pay = Math.min(d.principal, extraPayment);
+            d.principal -= pay;
+            extraPayment -= pay;
+            if (d.principal <= 0) {
+              d.principal = 0;
+            }
+          }
+        }
+      }
+
+      const monthsSaved = Math.max(0, baselineMonths - acceleratedMonths);
+      const interestSaved = Math.max(0, Math.round(baselineInterest - acceleratedInterest));
+
+      // Calculate debt-free target month & year
+      const now = new Date();
+      now.setMonth(now.getMonth() + acceleratedMonths);
+      const debtFreeDate = now.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+      return {
+        hasDebt: true,
+        baselineMonths: baselineMonths >= 600 ? '600+ (Never)' : baselineMonths,
+        acceleratedMonths: acceleratedMonths >= 600 ? '600+ (Never)' : acceleratedMonths,
+        monthsSaved,
+        baselineInterest: Math.round(baselineInterest),
+        acceleratedInterest: Math.round(acceleratedInterest),
+        interestSaved,
+        debtFreeDate,
+        neverPaysWarning
+      };
+    }
+
+    /**
+     * Refinance What-If Simulator
+     */
+    function simulateRefinance(totalDebt, currentWeightedApr, newApr, tenureMonths = 36, feePercent = 1.0) {
+      const P = Number(totalDebt) || 0;
+      if (P <= 0) return { netSavings: 0, oldTotalInterest: 0, newTotalInterest: 0, feeCost: 0 };
+
+      const oldEmi = calculateEMI(P, currentWeightedApr, tenureMonths);
+      const oldTotalInterest = Math.max(0, (oldEmi * tenureMonths) - P);
+
+      const newEmi = calculateEMI(P, newApr, tenureMonths);
+      const newTotalInterest = Math.max(0, (newEmi * tenureMonths) - P);
+
+      const feeCost = Math.round((P * feePercent) / 100);
+      const netSavings = Math.round(oldTotalInterest - (newTotalInterest + feeCost));
+
+      return {
+        netSavings,
+        oldTotalInterest: Math.round(oldTotalInterest),
+        newTotalInterest: Math.round(newTotalInterest),
+        feeCost,
+        newEmi
+      };
+    }
+
+    /**
+     * 60-Month Waterfall Projection Engine
+     * Simulates cashflow trajectory: Buffer -> Debt Payoff -> Target Buffer -> Multi-Asset Wealth
+     */
+    function simulateWaterfall60Months(state, gatekeeper, returnBase, returnCons, returnOpt) {
+      const months = 60;
+      const labels = [];
+      const debtCurve = [];
+      const bufferCurve = [];
+      const wealthBaseCurve = [];
+      const wealthConsCurve = [];
+      const wealthOptCurve = [];
+
+      let currentBuffer = Math.max(0, Number(state.savings) || 0);
+      const targetBuffer = gatekeeper.targetBuffer;
+      const starterTarget = gatekeeper.starterTarget;
+
+      // Active debts
+      let activeDebts = (state.debts || [])
+        .filter(d => Number(d.principal) > 0)
+        .map(d => ({
+          principal: Number(d.principal),
+          apr: Number(d.apr),
+          emi: d.emi ? Number(d.emi) : calculateEstimatedEmi(d.principal, d.apr, d.name)
+        }))
+        .sort((a, b) => b.apr - a.apr);
+
+      let investedWealthBase = 0;
+      let investedWealthCons = 0;
+      let investedWealthOpt = 0;
+
+      let debtFreeMonth = null;
+      let emergencyFullMonth = null;
+
+      const monthlySurplusBase = calculateSurplus(state.income, state.incomeType, state.expenses, state.debts).availableSurplus;
+      const inflation = Number(state.inflationRate) || 6.0;
+      const isNominal = state.chartNominal !== false;
+
+      for (let m = 1; m <= months; m++) {
+        labels.push(`M${m}`);
+
+        // Monthly surplus including freed EMIs from cleared debts
+        let freedEmis = 0;
+        let totalDebtRemaining = 0;
+
+        // Process existing debts
+        activeDebts.forEach(d => {
+          if (d.principal <= 0) {
+            freedEmis += d.emi;
+            return;
+          }
+          const r = (d.apr / 100) / 12;
+          const interest = d.principal * r;
+          const principalPay = Math.min(d.principal, Math.max(0, d.emi - interest));
+          d.principal -= principalPay;
+          if (d.principal <= 0) d.principal = 0;
+          totalDebtRemaining += d.principal;
+        });
+
+        if (totalDebtRemaining === 0 && !debtFreeMonth && activeDebts.length > 0) {
+          debtFreeMonth = m;
+        }
+
+        // Available cash this month = base surplus + freed EMIs
+        let cashToDeploy = monthlySurplusBase + freedEmis;
+
+        // 1. Starter buffer check
+        if (currentBuffer < starterTarget) {
+          const needed = starterTarget - currentBuffer;
+          const fill = Math.min(needed, cashToDeploy);
+          currentBuffer += fill;
+          cashToDeploy -= fill;
+        }
+
+        // 2. Extra cash to high-APR debts
+        if (cashToDeploy > 0 && totalDebtRemaining > 0) {
+          for (let d of activeDebts) {
+            if (d.principal > 0 && cashToDeploy > 0) {
+              const pay = Math.min(d.principal, cashToDeploy);
+              d.principal -= pay;
+              cashToDeploy -= pay;
+              totalDebtRemaining -= pay;
+            }
+          }
+        }
+
+        // 3. Complete emergency target buffer
+        if (cashToDeploy > 0 && currentBuffer < targetBuffer) {
+          const needed = targetBuffer - currentBuffer;
+          const fill = Math.min(needed, cashToDeploy);
+          currentBuffer += fill;
+          cashToDeploy -= fill;
+          if (currentBuffer >= targetBuffer && !emergencyFullMonth) {
+            emergencyFullMonth = m;
+          }
+        } else if (currentBuffer >= targetBuffer && !emergencyFullMonth) {
+          emergencyFullMonth = m;
+        }
+
+        // 4. Multi-asset wealth compounding
+        if (cashToDeploy > 0) {
+          const rBase = (returnBase / 100) / 12;
+          const rCons = (returnCons / 100) / 12;
+          const rOpt = (returnOpt / 100) / 12;
+
+          investedWealthBase = (investedWealthBase * (1 + rBase)) + cashToDeploy;
+          investedWealthCons = (investedWealthCons * (1 + rCons)) + cashToDeploy;
+          investedWealthOpt = (investedWealthOpt * (1 + rOpt)) + cashToDeploy;
+        }
+
+        // Inflation adjustment discount factor
+        let discount = 1.0;
+        if (!isNominal) {
+          discount = Math.pow(1 + (inflation / 100), m / 12);
+        }
+
+        debtCurve.push(Math.round(totalDebtRemaining / discount));
+        bufferCurve.push(Math.round(currentBuffer / discount));
+        wealthBaseCurve.push(Math.round(investedWealthBase / discount));
+        wealthConsCurve.push(Math.round(investedWealthCons / discount));
+        wealthOptCurve.push(Math.round(investedWealthOpt / discount));
+      }
+
+      return {
+        labels,
+        debtCurve,
+        bufferCurve,
+        wealthBaseCurve,
+        wealthConsCurve,
+        wealthOptCurve,
+        debtFreeMonth,
+        emergencyFullMonth
+      };
+    }
+
+    /**
+     * Financial Health Score (0 - 100)
+     * - Emergency Buffer: 0 to 30 pts
+     * - Debt Burden: 0 to 30 pts
+     * - Savings Rate: 0 to 20 pts
+     * - Insurance Coverage: 0 to 20 pts
+     */
+    function calculateHealthScore(state, surplusData, targetBuffer) {
+      const savings = Math.max(0, Number(state.savings) || 0);
+      const adjIncome = surplusData.adjustedIncome;
+
+      // 1. Buffer Score (30 pts)
+      let bufferScore = targetBuffer > 0 ? (savings / targetBuffer) * 30 : 30;
+      bufferScore = Math.min(30, Math.max(0, Math.round(bufferScore)));
+
+      // 2. Debt Burden Score (30 pts)
+      const debts = state.debts || [];
+      const totalEmis = surplusData.totalMinEmis;
+      let debtScore = 30;
+      if (adjIncome > 0) {
+        const dti = totalEmis / adjIncome;
+        if (dti > 0.5) {
+          debtScore = 0;
+        } else {
+          debtScore = Math.round(30 * (1 - (dti / 0.5)));
+        }
+      }
+      // Penalty for high-interest toxic debt (APR >= 14%)
+      const hasToxicDebt = debts.some(d => Number(d.apr) >= 14 && Number(d.principal) > 0);
+      if (hasToxicDebt) {
+        debtScore = Math.max(0, debtScore - 8);
+      }
+
+      // 3. Savings Rate Score (20 pts)
+      let savingsRateScore = 0;
+      if (adjIncome > 0 && surplusData.availableSurplus > 0) {
+        const rate = surplusData.availableSurplus / adjIncome;
+        if (rate >= 0.30) {
+          savingsRateScore = 20;
+        } else {
+          savingsRateScore = Math.round((rate / 0.30) * 20);
+        }
+      }
+
+      // 4. Insurance Coverage Score (20 pts)
+      let insuranceScore = 0;
+      if (state.healthInsurance === '5LorMore') insuranceScore += 10;
+      else if (state.healthInsurance === 'under5L') insuranceScore += 5;
+
+      if (Number(state.dependents) > 0) {
+        if (state.termInsurance === 'yes') insuranceScore += 10;
+      } else {
+        // No dependents -> automatic full term points
+        insuranceScore += 10;
+      }
+
+      const totalScore = Math.min(100, Math.max(0, bufferScore + debtScore + savingsRateScore + insuranceScore));
+
+      // Grade
+      let grade = 'Needs Work';
+      if (totalScore >= 80) grade = 'Excellent';
+      else if (totalScore >= 60) grade = 'Stable';
+      else if (totalScore >= 40) grade = 'Vulnerable';
+
+      return {
+        total: totalScore,
+        grade,
+        breakdown: {
+          buffer: bufferScore,
+          debt: debtScore,
+          savings: savingsRateScore,
+          insurance: insuranceScore
+        }
+      };
+    }
+
+    /**
+     * Determines the single Next Best Action based on financial hierarchy
+     */
+    function determineNextBestAction(state, gatekeeper, surplusData) {
+      if (surplusData.isDeficit) {
+        const deficit = Math.abs(surplusData.rawSurplus);
+        return {
+          title: `Eliminate Monthly Deficit (₹${formatINR(deficit)})`,
+          sub: 'You are spending more than your in-hand income each month. Pause all discretionary expenses to prevent spiraling into debt.'
+        };
+      }
+
+      if (gatekeeper.needsStarterBuffer) {
+        const gap = gatekeeper.starterTarget - state.savings;
+        return {
+          title: `Build 1-Month Cash Cushion (Need ₹${formatINR(gap)})`,
+          sub: `Direct your next surplus into an instant liquid account. Without this buffer, any unplanned medical or house repair forces fresh borrowing.`
+        };
+      }
+
+      if (gatekeeper.status === 'RED') {
+        return {
+          title: `Pay Off ${gatekeeper.maxApr}% Debt First (Guaranteed ${gatekeeper.maxApr}% Return)`,
+          sub: `Direct 100% of your ₹${formatINR(surplusData.availableSurplus)} monthly surplus into your highest-APR balance. No stock market return is guaranteed like debt clearance.`
+        };
+      }
+
+      if (state.healthInsurance === 'none') {
+        return {
+          title: 'Secure Health Insurance (Minimum ₹5 Lakhs Floater)',
+          sub: 'You have zero health cover. A single hospitalisation can wipe out years of accumulated savings and force high-interest emergency borrowing.'
+        };
+      }
+
+      if (gatekeeper.status === 'ORANGE') {
+        return {
+          title: 'Execute Balanced Payoff (50% Debt / 50% Liquid Shield)',
+          sub: 'Split your surplus evenly. Accelerate middle-tier debt while building peace-of-mind liquidity.'
+        };
+      }
+
+      if (gatekeeper.status === 'YELLOW') {
+        const gap = gatekeeper.targetBuffer - state.savings;
+        return {
+          title: `Fill Emergency Runway to Target (Gap: ₹${formatINR(gap)})`,
+          sub: `Channel ₹${formatINR(Math.round((surplusData.availableSurplus * gatekeeper.yellowBufferPct) / 100))}/mo into Liquid Funds/FD until your ${calculateTargetMonths(state.dependents, state.incomeType)}-month buffer is full.`
+        };
+      }
+
+      return {
+        title: 'System In Full Flight: Automate Multi-Asset SIPs',
+        sub: 'Your emergency cushion is secured and expensive debts are eliminated. Automate monthly transfers into your asset basket and let compounding work.'
+      };
+    }
+
+    /**
+     * Formatting Helpers: Indian Rupee formatting (Lakhs & Crores)
+     */
+    function formatINR(number) {
+      const n = Math.round(Number(number) || 0);
+      return new Intl.NumberFormat('en-IN', {
+        maximumFractionDigits: 0
+      }).format(n);
+    }
+
+    function formatLakhCrore(number) {
+      const n = Number(number) || 0;
+      const absN = Math.abs(n);
+      if (absN >= 10000000) {
+        return '₹' + (n / 10000000).toFixed(2) + ' Cr';
+      }
+      if (absN >= 100000) {
+        return '₹' + (n / 100000).toFixed(1) + ' L';
+      }
+      return '₹' + formatINR(n);
+    }
+
+
+    // ==========================================
+    // === 4. RENDER ============================
+    // (DOM Updates & Chart Lifecycle)
+    // ==========================================
+
+    function render() {
+      // 1. Calculations
+      const surplusData = calculateSurplus(AppState.income, AppState.incomeType, AppState.expenses, AppState.debts);
+      const gatekeeper = determineGatekeeper(AppState);
+      const healthScore = calculateHealthScore(AppState, surplusData, gatekeeper.targetBuffer);
+      const nextAction = determineNextBestAction(AppState, gatekeeper, surplusData);
+      const netWorthData = calculateNetWorth(AppState);
+
+      // Total Booster calculation (slider + micro-recoveries)
+      let microSum = 0;
+      if (AppState.microRecoverySelections.dining) microSum += 1500;
+      if (AppState.microRecoverySelections.subscriptions) microSum += 800;
+      if (AppState.microRecoverySelections.gig) microSum += 3500;
+
+      // Cap booster to available surplus
+      const rawBooster = Math.max(0, Number(AppState.booster) || 0) + microSum;
+      const effectiveBooster = Math.min(surplusData.availableSurplus, rawBooster);
+      const remainingSurplusAfterBooster = Math.max(0, surplusData.availableSurplus - effectiveBooster);
+
+      // Determine Investable Amount based on Gate
+      let investableAmount = 0;
+      if (surplusData.isDeficit) {
+        investableAmount = 0;
+      } else if (gatekeeper.status === 'RED') {
+        investableAmount = 0; // All to debt
+      } else if (gatekeeper.status === 'ORANGE') {
+        investableAmount = Math.round(remainingSurplusAfterBooster * 0.5);
+      } else if (gatekeeper.status === 'YELLOW') {
+        investableAmount = Math.round((remainingSurplusAfterBooster * gatekeeper.yellowBasketPct) / 100);
+      } else {
+        // GREEN
+        investableAmount = remainingSurplusAfterBooster;
+      }
+
+      const allocationItems = calculateAssetAllocation(investableAmount, AppState.riskProfile, gatekeeper);
+      const portfolioReturns = calculatePortfolioReturns(allocationItems, AppState.inflationRate);
+      const debtSim = simulateDebtPayoff(AppState.debts, effectiveBooster);
+
+      // 2. Render Net Worth Summary Card at the Top
+      renderNetWorthSummary(netWorthData);
+
+      // 3. Render Header & Health Score Banner
+      renderHealthBanner(healthScore, nextAction, gatekeeper);
+
+      // 4. Render Deficit & Advisory Banners
+      renderBanners(surplusData, gatekeeper, AppState);
+
+      // 5. Render Foundation Inputs Feedback
+      renderFoundationInputs(surplusData);
+
+      // 6. Render Net Worth Tracking Section (Inputs & Sub-totals)
+      renderAssetTracker(netWorthData);
+
+      // 7. Render Debts List & Booster
+      renderDebtsList(AppState.debts, surplusData, effectiveBooster, remainingSurplusAfterBooster);
+
+      // 8. Render Refinance Tool
+      renderRefinanceTool(AppState.debts);
+
+      // 9. Render Gatekeeper Card
+      renderGatekeeperCard(gatekeeper, AppState);
+
+      // 10. Render Debt Impact Metrics
+      renderDebtImpact(debtSim);
+
+      // 11. Render Multi-Asset Cards & Expected Returns
+      renderAssetCards(allocationItems, investableAmount, portfolioReturns);
+
+      // 12. Render Charts (Doughnut & 60-Month Projection)
+      renderCharts(surplusData, effectiveBooster, gatekeeper, allocationItems, portfolioReturns);
+
+      // 13. Render Macro Radar
+      renderMacroRadar();
+
+      // 14. Update Mobile Sticky Bar
+      renderMobileBar(surplusData, healthScore, gatekeeper, netWorthData);
+    }
+
+    function renderNetWorthSummary(nw) {
+      const valueEl = document.getElementById('hero-net-worth-value');
+      const shorthandEl = document.getElementById('hero-net-worth-shorthand');
+      const badgeEl = document.getElementById('hero-net-worth-badge');
+      const cardEl = document.getElementById('hero-net-worth-card');
+      const assetsEl = document.getElementById('hero-assets-sum');
+      const liabilitiesEl = document.getElementById('hero-liabilities-sum');
+      const dtaEl = document.getElementById('hero-dta-ratio');
+      const barAssets = document.getElementById('bar-assets-ratio');
+      const barLiabilities = document.getElementById('bar-liabilities-ratio');
+
+      // Value & Shorthand
+      const prefix = nw.netWorth < 0 ? '−₹' : '₹';
+      valueEl.textContent = `${prefix}${formatINR(Math.abs(nw.netWorth))}`;
+      shorthandEl.textContent = `(${formatLakhCrore(nw.netWorth)})`;
+
+      // Badge & Styling
+      if (nw.netWorth < 0) {
+        badgeEl.textContent = 'Net Liabilities > Assets';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        valueEl.className = 'text-3xl sm:text-4xl font-black text-rose-400 font-mono tracking-tight';
+        cardEl.className = 'lg:col-span-6 rounded-2xl border border-rose-500/40 bg-fin-surface p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between';
+      } else if (nw.totalLiabilities === 0) {
+        badgeEl.textContent = '100% Debt-Free Net Worth';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        valueEl.className = 'text-3xl sm:text-4xl font-black text-emerald-400 font-mono tracking-tight';
+        cardEl.className = 'lg:col-span-6 rounded-2xl border border-emerald-500/30 bg-fin-surface p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between';
+      } else {
+        badgeEl.textContent = 'Positive Net Worth';
+        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30';
+        valueEl.className = 'text-3xl sm:text-4xl font-black text-white font-mono tracking-tight';
+        cardEl.className = 'lg:col-span-6 rounded-2xl border border-fin-border bg-fin-surface p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col justify-between';
+      }
+
+      // Breakdown numbers
+      assetsEl.textContent = `₹${formatINR(nw.totalAssets)}`;
+      liabilitiesEl.textContent = `₹${formatINR(nw.totalLiabilities)}`;
+      dtaEl.textContent = `${nw.debtToAssetRatio}%`;
+
+      // Visual split bar
+      const combinedTotal = nw.totalAssets + nw.totalLiabilities;
+      if (combinedTotal > 0) {
+        const assetsWidth = Math.max(5, Math.min(95, Math.round((nw.totalAssets / combinedTotal) * 100)));
+        const liabilitiesWidth = 100 - assetsWidth;
+        barAssets.style.width = `${assetsWidth}%`;
+        barLiabilities.style.width = `${liabilitiesWidth}%`;
+      } else {
+        barAssets.style.width = '100%';
+        barLiabilities.style.width = '0%';
+      }
+
+      // Category items active count
+      let activeCategories = 0;
+      if (nw.savings > 0) activeCategories++;
+      if (nw.mfEquity > 0) activeCategories++;
+      if (nw.epfPpf > 0) activeCategories++;
+      if (nw.gold > 0) activeCategories++;
+      if (nw.realEstateOther > 0) activeCategories++;
+
+      document.getElementById('hero-asset-categories-summary').textContent = `${activeCategories} asset asset-pool(s) active`;
+    }
+
+    function renderAssetTracker(nw) {
+      // Sync emergency cash display
+      document.getElementById('tracker-savings-val').textContent = `₹${formatINR(nw.savings)}`;
+
+      // Internal sub-totals
+      document.getElementById('tracker-total-assets').textContent = `₹${formatINR(nw.totalAssets)}`;
+      document.getElementById('tracker-total-liabilities').textContent = `₹${formatINR(nw.totalLiabilities)}`;
+
+      const nwValEl = document.getElementById('tracker-net-worth');
+      const prefix = nw.netWorth < 0 ? '−₹' : '₹';
+      nwValEl.textContent = `${prefix}${formatINR(Math.abs(nw.netWorth))}`;
+
+      if (nw.netWorth < 0) {
+        nwValEl.className = 'font-mono font-black text-rose-400 text-base';
+      } else {
+        nwValEl.className = 'font-mono font-black text-emerald-300 text-base';
+      }
+    }
+
+    function renderHealthBanner(healthScore, nextAction, gatekeeper) {
+      document.getElementById('health-score-value').textContent = healthScore.total;
+      document.getElementById('health-score-grade').textContent = healthScore.grade;
+
+      // Color ring offset
+      const circle = document.getElementById('score-ring-circle');
+      const offset = 264 - (264 * healthScore.total) / 100;
+      circle.style.strokeDashoffset = offset;
+
+      // Score ring color
+      if (healthScore.total >= 75) circle.className.baseVal = 'text-emerald-500 transition-all duration-700';
+      else if (healthScore.total >= 50) circle.className.baseVal = 'text-amber-500 transition-all duration-700';
+      else circle.className.baseVal = 'text-rose-500 transition-all duration-700';
+
+      document.getElementById('score-breakdown-buffer').textContent = `${healthScore.breakdown.buffer}/30`;
+      document.getElementById('score-breakdown-debt').textContent = `${healthScore.breakdown.debt}/30`;
+      document.getElementById('score-breakdown-savings').textContent = `${healthScore.breakdown.savings}/20`;
+      document.getElementById('score-breakdown-insurance').textContent = `${healthScore.breakdown.insurance}/20`;
+
+      // Next Best Action
+      document.getElementById('next-best-action-text').textContent = nextAction.title;
+      document.getElementById('next-best-action-sub').textContent = nextAction.sub;
+
+      const miniPill = document.getElementById('gate-badge-mini');
+      miniPill.textContent = gatekeeper.status;
+      if (gatekeeper.status === 'RED') miniPill.className = 'ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+      else if (gatekeeper.status === 'ORANGE') miniPill.className = 'ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+      else if (gatekeeper.status === 'YELLOW') miniPill.className = 'ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+      else miniPill.className = 'ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+    }
+
+    function renderBanners(surplusData, gatekeeper, state) {
+      // Deficit Banner
+      const deficitBanner = document.getElementById('deficit-banner');
+      if (surplusData.isDeficit) {
+        deficitBanner.classList.remove('hidden');
+        document.getElementById('deficit-msg').textContent =
+          `Essential expenses (₹${formatINR(surplusData.expenses)}) and mandatory EMIs (₹${formatINR(surplusData.totalMinEmis)}) exceed adjusted net income (₹${formatINR(surplusData.adjustedIncome)}). Deficit: ₹${formatINR(Math.abs(surplusData.rawSurplus))}/mo.`;
+      } else {
+        deficitBanner.classList.add('hidden');
+      }
+
+      // Advisory Banners Container
+      const container = document.getElementById('advisory-banners-container');
+      container.innerHTML = '';
+
+      // Health Insurance Advisory
+      if (state.healthInsurance !== '5LorMore') {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl border border-amber-500/40 bg-amber-950/30 text-amber-200 text-xs flex items-center justify-between gap-3 shadow';
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span><strong>Insurance Caution:</strong> ${state.healthInsurance === 'none' ? 'You have no health insurance cover.' : 'Your health cover is under ₹5 Lakhs.'} A single hospitalisation can liquidate years of equity compounding. Prioritise a family floater policy.</span>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] uppercase font-bold shrink-0">Advisory</span>
+        `;
+        container.appendChild(div);
+      }
+
+      // Term Life Advisory
+      if (Number(state.dependents) > 0 && state.termInsurance === 'no') {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl border border-rose-500/40 bg-rose-950/30 text-rose-200 text-xs flex items-center justify-between gap-3 shadow';
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+            <span><strong>Family Protection Alert:</strong> You have ${state.dependents} dependent(s) but no Term Life Insurance. Obtain a pure term plan (10x-15x annual salary) to protect your dependents before investing.</span>
+          </div>
+          <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] uppercase font-bold shrink-0">Priority</span>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    function renderFoundationInputs(surplusData) {
+      // Income labels
+      document.getElementById('label-income-fmt').textContent = `₹${formatINR(AppState.income)}`;
+      document.getElementById('label-expenses-fmt').textContent = `₹${formatINR(AppState.expenses)}`;
+
+      // Income type toggle
+      const btnSal = document.getElementById('btn-type-salaried');
+      const btnIrr = document.getElementById('btn-type-irregular');
+      const hint = document.getElementById('income-plan-hint');
+
+      if (AppState.incomeType === 'irregular') {
+        btnIrr.className = 'py-2 px-3 rounded-lg border text-center font-semibold transition text-xs border-emerald-500 bg-emerald-500/10 text-emerald-300';
+        btnSal.className = 'py-2 px-3 rounded-lg border text-center font-medium transition text-xs border-fin-border bg-slate-900 text-slate-400 hover:text-slate-200';
+        hint.textContent = `Irregular planning active: Planning safely on 70% of declared income (₹${formatINR(surplusData.adjustedIncome)}/mo) to buffer lean months.`;
+      } else {
+        btnSal.className = 'py-2 px-3 rounded-lg border text-center font-semibold transition text-xs border-emerald-500 bg-emerald-500/10 text-emerald-300';
+        btnIrr.className = 'py-2 px-3 rounded-lg border text-center font-medium transition text-xs border-fin-border bg-slate-900 text-slate-400 hover:text-slate-200';
+        hint.textContent = `Using 100% of declared in-hand income (₹${formatINR(AppState.income)}/mo) for cashflow planning.`;
+      }
+
+      // Emergency runway text
+      const runwayMonths = AppState.expenses > 0 ? (AppState.savings / AppState.expenses).toFixed(1) : '0';
+      document.getElementById('label-savings-runway').textContent = `Runway: ${runwayMonths} months`;
+
+      // Term insurance visibility (only shown if dependents > 0)
+      const termBox = document.getElementById('term-insurance-box');
+      if (Number(AppState.dependents) > 0) {
+        termBox.classList.remove('opacity-40');
+      } else {
+        termBox.classList.add('opacity-40');
+      }
+
+      // Tax Regime Hint (relevant for >= 80k)
+      const taxContainer = document.getElementById('tax-regime-container');
+      const taxTip = document.getElementById('tax-regime-tip');
+      const isHighEarner = AppState.income >= 80000;
+
+      if (isHighEarner) {
+        taxContainer.classList.add('ring-1', 'ring-cyan-500/30', 'p-2', 'rounded-lg');
+      } else {
+        taxContainer.classList.remove('ring-1', 'ring-cyan-500/30', 'p-2', 'rounded-lg');
+      }
+
+      if (AppState.taxRegime === 'new') {
+        taxTip.innerHTML = `<span class="text-cyan-300 font-semibold">New Tax Regime Active:</span> Section 80C (ELSS/PPF) & 80CCD(1B) (NPS) deductions are <strong>NOT available</strong>. Invest for pure compounding and low cost rather than lock-in tax products.`;
+      } else {
+        taxTip.innerHTML = `<span class="text-emerald-300 font-semibold">Old Tax Regime Active:</span> Section 80C allows deductions up to ₹1.5L (via ELSS, PPF) and Section 80CCD(1B) allows an extra ₹50,000 deduction in NPS Tier 1.`;
+      }
+
+      // Tax regime toggle buttons
+      const btnNew = document.getElementById('btn-regime-new');
+      const btnOld = document.getElementById('btn-regime-old');
+      if (AppState.taxRegime === 'new') {
+        btnNew.className = 'px-2.5 py-1 text-xs font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        btnOld.className = 'px-2.5 py-1 text-xs text-slate-400 hover:text-white rounded';
+      } else {
+        btnOld.className = 'px-2.5 py-1 text-xs font-semibold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        btnNew.className = 'px-2.5 py-1 text-xs text-slate-400 hover:text-white rounded';
+      }
+    }
+
+    function renderDebtsList(debts, surplusData, effectiveBooster, remainingSurplus) {
+      const container = document.getElementById('debts-list');
+      container.innerHTML = '';
+
+      if (!debts || debts.length === 0) {
+        container.innerHTML = `
+          <div class="p-3 text-center rounded-lg border border-dashed border-slate-800 text-slate-500 text-xs">
+            Zero active debts registered. You're ready to accelerate emergency savings and wealth creation!
+          </div>
+        `;
+      } else {
+        debts.forEach((debt, index) => {
+          const isEstimated = !debt.emi;
+          const displayEmi = debt.emi ? Number(debt.emi) : calculateEstimatedEmi(debt.principal, debt.apr, debt.name);
+          const isHighApr = Number(debt.apr) >= 12;
+
+          const card = document.createElement('div');
+          card.className = `p-3 rounded-lg border ${isHighApr ? 'border-rose-500/40 bg-rose-950/20' : 'border-slate-800 bg-slate-900'} text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5`;
+          card.innerHTML = `
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white">${debt.name || `Debt #${index + 1}`}</span>
+                ${isEstimated ? '<span class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px] border border-amber-500/30">Estimated EMI</span>' : ''}
+                ${isHighApr ? '<span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] border border-rose-500/40 font-semibold">Avalanche Priority</span>' : ''}
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                <span>Balance: <strong class="text-slate-200">₹${formatINR(debt.principal)}</strong></span>
+                <span>APR: <strong class="${isHighApr ? 'text-rose-400 font-bold' : 'text-slate-200'}">${debt.apr}%</strong></span>
+                <span>EMI: <strong class="text-slate-200">₹${formatINR(displayEmi)}/mo</strong></span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 self-end sm:self-center">
+              <button data-action="delete-debt" data-index="${index}" class="text-slate-500 hover:text-rose-400 px-2 py-1 rounded transition text-xs" title="Remove debt">
+                ✕ Delete
+              </button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      // Total EMIs counter
+      document.getElementById('label-total-emis').textContent = `₹${formatINR(surplusData.totalMinEmis)}/mo`;
+
+      // Booster Slider Limits & Display
+      const boosterSlider = document.getElementById('slider-booster');
+      boosterSlider.max = Math.max(0, surplusData.availableSurplus);
+      boosterSlider.value = Math.min(surplusData.availableSurplus, Number(AppState.booster) || 0);
+
+      document.getElementById('label-booster-fmt').textContent = `₹${formatINR(effectiveBooster)}/mo`;
+      document.getElementById('label-remaining-surplus').textContent = `Surplus left: ₹${formatINR(remainingSurplus)}`;
+
+      // Update checkboxes state
+      document.querySelectorAll('.micro-cb').forEach(cb => {
+        const amount = Number(cb.dataset.amount);
+        if (amount === 1500) cb.checked = !!AppState.microRecoverySelections.dining;
+        if (amount === 800) cb.checked = !!AppState.microRecoverySelections.subscriptions;
+        if (amount === 3500) cb.checked = !!AppState.microRecoverySelections.gig;
+      });
+
+      // Add Debt button limit (max 5)
+      const btnAdd = document.getElementById('btn-add-debt');
+      if (debts.length >= 5) {
+        btnAdd.disabled = true;
+        btnAdd.classList.add('opacity-40', 'cursor-not-allowed');
+      } else {
+        btnAdd.disabled = false;
+        btnAdd.classList.remove('opacity-40', 'cursor-not-allowed');
+      }
+    }
+
+    function renderRefinanceTool(debts) {
+      const active = (debts || []).filter(d => Number(d.principal) > 0);
+      const totalPrincipal = active.reduce((sum, d) => sum + Number(d.principal), 0);
+
+      const resultBox = document.getElementById('refinance-result');
+      if (totalPrincipal <= 0) {
+        resultBox.textContent = 'Add debts with an outstanding balance to calculate refinance savings.';
+        return;
+      }
+
+      // Weighted average APR
+      let weightedAprSum = 0;
+      active.forEach(d => {
+        weightedAprSum += (Number(d.principal) * Number(d.apr));
+      });
+      const weightedApr = Number((weightedAprSum / totalPrincipal).toFixed(2));
+
+      const newApr = Number(document.getElementById('refinance-new-apr').value) || 11.5;
+      const fee = Number(document.getElementById('refinance-fee').value) || 1.0;
+
+      const ref = simulateRefinance(totalPrincipal, weightedApr, newApr, 36, fee);
+
+      if (ref.netSavings > 0) {
+        resultBox.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-emerald-400">Potential Net Savings: ₹${formatINR(ref.netSavings)}</span>
+            <span class="text-[10px] text-slate-400">36-Month Consolidation</span>
+          </div>
+          <p class="text-[11px] text-slate-300">
+            Consolidating ₹${formatINR(totalPrincipal)} from current average ${weightedApr}% down to ${newApr}% saves <strong>₹${formatINR(ref.oldTotalInterest - ref.newTotalInterest)}</strong> in interest, minus ₹${formatINR(ref.feeCost)} processing fee.
+          </p>
+        `;
+      } else {
+        resultBox.innerHTML = `
+          <div class="text-amber-300 font-semibold mb-1">Refinancing Not Recommended</div>
+          <p class="text-[11px] text-slate-400">
+            At ${newApr}% APR with a ${fee}% fee, total interest and costs would exceed your existing terms.
+          </p>
+        `;
+      }
+    }
+
+    function renderGatekeeperCard(gatekeeper, state) {
+      const card = document.getElementById('gatekeeper-card');
+      const pill = document.getElementById('gate-pill');
+      const title = document.getElementById('gate-title');
+      const desc = document.getElementById('gate-description');
+      const directive = document.getElementById('gate-directive-text');
+      const icon = document.getElementById('gate-icon');
+
+      pill.textContent = gatekeeper.status;
+      title.textContent = gatekeeper.title;
+      desc.textContent = gatekeeper.summary;
+      directive.textContent = gatekeeper.directive;
+
+      // Color Theme
+      if (gatekeeper.color === 'rose') {
+        card.className = 'rounded-xl border border-rose-500/50 bg-rose-950/20 p-5 shadow-xl transition-all';
+        pill.className = 'px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-rose-500/20 text-rose-300 border border-rose-500/50';
+        icon.className = 'w-3.5 h-3.5 rounded-full bg-rose-500 animate-pulse';
+      } else if (gatekeeper.color === 'amber') {
+        card.className = 'rounded-xl border border-amber-500/50 bg-amber-950/20 p-5 shadow-xl transition-all';
+        pill.className = 'px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-amber-500/20 text-amber-300 border border-amber-500/50';
+        icon.className = 'w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse';
+      } else {
+        card.className = 'rounded-xl border border-emerald-500/50 bg-emerald-950/20 p-5 shadow-xl transition-all';
+        pill.className = 'px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/50';
+        icon.className = 'w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse';
+      }
+
+      // Yellow slider visibility
+      const yellowBox = document.getElementById('yellow-slider-container');
+      if (gatekeeper.status === 'YELLOW' && !gatekeeper.needsStarterBuffer) {
+        yellowBox.classList.remove('hidden');
+        document.getElementById('yellow-split-label').textContent = `${gatekeeper.yellowBufferPct}% Buffer / ${gatekeeper.yellowBasketPct}% Basket`;
+      } else {
+        yellowBox.classList.add('hidden');
+      }
+
+      // Lock High Risk option if RED
+      const highRiskCard = document.getElementById('card-risk-high');
+      const riskLockNote = document.getElementById('risk-lock-note');
+      if (gatekeeper.lockHighRisk) {
+        highRiskCard.classList.add('opacity-40', 'pointer-events-none');
+        riskLockNote.classList.remove('hidden');
+      } else {
+        highRiskCard.classList.remove('opacity-40', 'pointer-events-none');
+        riskLockNote.classList.add('hidden');
+      }
+    }
+
+    function renderDebtImpact(debtSim) {
+      const card = document.getElementById('debt-recovery-card');
+      const badge = document.getElementById('badge-debt-count');
+
+      if (!debtSim.hasDebt) {
+        badge.textContent = '0 Debts';
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        document.getElementById('metric-months-saved').textContent = '0';
+        document.getElementById('metric-months-baseline').textContent = 'debt-free baseline';
+        document.getElementById('metric-interest-saved').textContent = '₹0';
+        document.getElementById('metric-debtfree-date').textContent = 'Debt-Free';
+        document.getElementById('metric-debtfree-sub').textContent = 'No payments owed';
+        document.getElementById('debt-warning-container').innerHTML = '';
+        return;
+      }
+
+      badge.textContent = `${AppState.debts.length} Active Debt(s)`;
+      badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
+
+      document.getElementById('metric-months-saved').textContent = `${debtSim.monthsSaved} mos`;
+      document.getElementById('metric-months-baseline').textContent = `vs ${debtSim.baselineMonths} mos baseline`;
+      document.getElementById('metric-interest-saved').textContent = `₹${formatINR(debtSim.interestSaved)}`;
+      document.getElementById('metric-debtfree-date').textContent = debtSim.debtFreeDate;
+      document.getElementById('metric-debtfree-sub').textContent = `${debtSim.acceleratedMonths} mos accelerated`;
+
+      // Warning container
+      const warnBox = document.getElementById('debt-warning-container');
+      warnBox.innerHTML = '';
+      if (debtSim.neverPaysWarning) {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 rounded bg-rose-950/50 border border-rose-500/40 text-rose-200 text-xs font-semibold flex items-center gap-2';
+        div.innerHTML = `
+          <span>⚠️ <strong>Warning:</strong> One of your loans has an EMI less than or equal to monthly interest. At this payment rate, the loan balance will never reduce. Increase EMI immediately.</span>
+        `;
+        warnBox.appendChild(div);
+      }
+    }
+
+    function renderAssetCards(allocationItems, totalInvestable, returns) {
+      const container = document.getElementById('allocation-cards-grid');
+      container.innerHTML = '';
+
+      document.getElementById('alloc-total-investable').textContent = `₹${formatINR(totalInvestable)}/mo`;
+
+      if (!allocationItems || allocationItems.length === 0) {
+        container.innerHTML = `
+          <div class="sm:col-span-2 p-6 rounded-xl border border-dashed border-slate-800 text-center text-slate-400 text-xs">
+            <p class="font-semibold text-slate-300 mb-1">Portfolio Accumulation Paused</p>
+            <p>100% of your current surplus is working on debt avalanche elimination or initial liquid emergency buffering.</p>
+          </div>
+        `;
+      } else {
+        allocationItems.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'p-4 rounded-xl border border-fin-border bg-fin-card hover:bg-fin-cardHover transition space-y-2.5 text-xs';
+
+          card.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="font-bold text-white text-xs block">${item.name}</span>
+                <span class="text-[10px] text-slate-400">${item.buyGuide}</span>
+              </div>
+              <div class="text-right">
+                <span class="font-mono font-bold text-emerald-400 text-sm block">₹${formatINR(item.finalAmount)}</span>
+                <span class="text-[10px] text-slate-400 font-mono">${item.share}% share</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 text-[10px]">
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Liquidity: ${item.liquidity}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-cyan-900/40">Tax: ${item.taxNote}</span>
+            </div>
+
+            ${item.mergedNotice ? `<div class="p-1.5 rounded bg-amber-500/10 text-amber-300 text-[10px] border border-amber-500/30 font-medium">${item.mergedNotice}</div>` : ''}
+
+            ${item.key === 'PPF' ? `<div class="text-[10px] text-amber-300/90 leading-tight">⚠️ 15-year statutory lock-in (partial loan/withdrawal from 7th financial year). Capped at 30% of basket.</div>` : ''}
+            ${item.key === 'GOLD_ETF' ? `<div class="text-[10px] text-slate-400 leading-tight">Direct Gold ETF tracking 99.5% pure physical bullion. Avoid physical jewellery making charges.</div>` : ''}
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      // Expected return rates
+      document.getElementById('rate-conservative').textContent = `${returns.conservative}%`;
+      document.getElementById('rate-base').textContent = `${returns.base}%`;
+      document.getElementById('rate-optimistic').textContent = `${returns.optimistic}%`;
+      document.getElementById('rate-real').textContent = `${returns.real}%`;
+    }
+
+    function renderCharts(surplusData, effectiveBooster, gatekeeper, allocationItems, portfolioReturns) {
+      // 1. Doughnut Chart: Monthly Cashflow Split
+      const doughnutFallback = document.getElementById('doughnut-fallback-table');
+      const doughnutTotalBadge = document.getElementById('doughnut-total-badge');
+      const doughnutCenter = document.getElementById('doughnut-center-amount');
+
+      const needs = surplusData.expenses;
+      const emis = surplusData.totalMinEmis;
+      const booster = effectiveBooster;
+
+      let bufferAllocation = 0;
+      if (gatekeeper.status === 'YELLOW') {
+        const remaining = Math.max(0, surplusData.availableSurplus - booster);
+        bufferAllocation = Math.round((remaining * gatekeeper.yellowBufferPct) / 100);
+      } else if (gatekeeper.needsStarterBuffer) {
+        bufferAllocation = Math.max(0, surplusData.availableSurplus - booster);
+      }
+
+      // Investment assets breakdown
+      let safeSum = 0;
+      let equitySum = 0;
+      let goldSum = 0;
+      let reitSum = 0;
+
+      (allocationItems || []).forEach(item => {
+        if (item.key === 'FD_RD' || item.key === 'PPF' || item.key === 'TBILLS' || item.key === 'LIQUID_FUND' || item.key === 'DEBT_GILT') {
+          safeSum += item.finalAmount;
+        } else if (item.key === 'NIFTY_INDEX' || item.key === 'FLEXI_EQUITY') {
+          equitySum += item.finalAmount;
+        } else if (item.key === 'GOLD_ETF') {
+          goldSum += item.finalAmount;
+        } else if (item.key === 'REIT_INVIT') {
+          reitSum += item.finalAmount;
+        }
+      });
+
+      const totalFlow = needs + emis + booster + bufferAllocation + safeSum + equitySum + goldSum + reitSum;
+      doughnutTotalBadge.textContent = `Total: ₹${formatINR(totalFlow)}`;
+      doughnutCenter.textContent = `₹${formatINR(AppState.income)}`;
+
+      // Accessible fallback table
+      const cashflowRows = [
+        { label: 'Essential Needs', val: needs, pct: Math.round((needs / totalFlow) * 100) },
+        { label: 'Minimum EMIs', val: emis, pct: Math.round((emis / totalFlow) * 100) },
+        { label: 'Payoff Booster', val: booster, pct: Math.round((booster / totalFlow) * 100) },
+        { label: 'Emergency Buffer', val: bufferAllocation, pct: Math.round((bufferAllocation / totalFlow) * 100) },
+        { label: 'Safe/Debt Assets', val: safeSum, pct: Math.round((safeSum / totalFlow) * 100) },
+        { label: 'Equity Index', val: equitySum, pct: Math.round((equitySum / totalFlow) * 100) },
+        { label: 'Gold ETF', val: goldSum, pct: Math.round((goldSum / totalFlow) * 100) },
+        { label: 'REITs / Real Estate', val: reitSum, pct: Math.round((reitSum / totalFlow) * 100) }
+      ].filter(r => r.val > 0);
+
+      doughnutFallback.innerHTML = `
+        <div class="grid grid-cols-3 font-semibold text-slate-400 pb-1 border-b border-slate-800">
+          <span>Flow Segment</span>
+          <span class="text-right">₹ / Month</span>
+          <span class="text-right">Share</span>
+        </div>
+        ${cashflowRows.map(r => `
+          <div class="grid grid-cols-3 py-0.5 text-slate-300">
+            <span>${r.label}</span>
+            <span class="text-right font-mono">₹${formatINR(r.val)}</span>
+            <span class="text-right font-mono">${r.pct}%</span>
+          </div>
+        `).join('')}
+      `;
+
+      // Draw Doughnut Chart with Chart.js if available
+      const doughnutCanvas = document.getElementById('cashflow-doughnut-canvas');
+      if (typeof Chart !== 'undefined' && doughnutCanvas) {
+        const labels = cashflowRows.map(r => r.label);
+        const dataValues = cashflowRows.map(r => r.val);
+        const backgroundColors = [
+          '#64748b', // Needs (slate)
+          '#f43f5e', // EMIs (rose)
+          '#fb7185', // Booster
+          '#f59e0b', // Buffer (amber)
+          '#0ea5e9', // Safe
+          '#10b981', // Equity (emerald)
+          '#eab308', // Gold (yellow)
+          '#a855f7'  // REIT
+        ];
+
+        if (cashflowChartInstance) {
+          cashflowChartInstance.data.labels = labels;
+          cashflowChartInstance.data.datasets[0].data = dataValues;
+          cashflowChartInstance.data.datasets[0].backgroundColor = backgroundColors.slice(0, dataValues.length);
+          cashflowChartInstance.update();
+        } else {
+          try {
+            cashflowChartInstance = new Chart(doughnutCanvas, {
+              type: 'doughnut',
+              data: {
+                labels,
+                datasets: [{
+                  data: dataValues,
+                  backgroundColor: backgroundColors.slice(0, dataValues.length),
+                  borderWidth: 2,
+                  borderColor: '#0b1329'
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => ` ${ctx.label}: ₹${formatINR(ctx.raw)}`
+                    }
+                  }
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('Chart.js Doughnut init failed:', e);
+          }
+        }
+      }
+
+      // 2. Line Chart: 60-Month Waterfall Projection
+      const waterfall = simulateWaterfall60Months(
+        AppState,
+        gatekeeper,
+        portfolioReturns.base,
+        portfolioReturns.conservative,
+        portfolioReturns.optimistic
+      );
+
+      // Accessible Summary
+      const projFallback = document.getElementById('projection-fallback-summary');
+      const finalWealth = waterfall.wealthBaseCurve[waterfall.wealthBaseCurve.length - 1];
+      const finalCons = waterfall.wealthConsCurve[waterfall.wealthConsCurve.length - 1];
+      const finalOpt = waterfall.wealthOptCurve[waterfall.wealthOptCurve.length - 1];
+
+      projFallback.innerHTML = `
+        <div class="flex flex-wrap justify-between gap-1 text-[11px]">
+          <span>Milestones:</span>
+          <span>${waterfall.debtFreeMonth ? `Debt-Free in Month ${waterfall.debtFreeMonth}` : 'Debt-Free from Month 1'}</span>
+          <span>•</span>
+          <span>Emergency Fund Funded Month ${waterfall.emergencyFullMonth || 60}</span>
+        </div>
+        <div class="text-[10px] text-slate-400 mt-1">
+          Month 60 Portfolio Value (${AppState.chartNominal ? 'Nominal' : 'Real'}): 
+          <strong class="text-emerald-300">₹${formatINR(finalWealth)}</strong> 
+          (Range: ₹${formatINR(finalCons)} to ₹${formatINR(finalOpt)})
+        </div>
+      `;
+
+      // Render Line Chart
+      const lineCanvas = document.getElementById('projection-line-canvas');
+      if (typeof Chart !== 'undefined' && lineCanvas) {
+        if (projectionChartInstance) {
+          projectionChartInstance.data.labels = waterfall.labels;
+          projectionChartInstance.data.datasets[0].data = waterfall.wealthBaseCurve;
+          projectionChartInstance.data.datasets[1].data = waterfall.debtCurve;
+          projectionChartInstance.data.datasets[2].data = waterfall.bufferCurve;
+          projectionChartInstance.data.datasets[3].data = waterfall.wealthConsCurve;
+          projectionChartInstance.data.datasets[4].data = waterfall.wealthOptCurve;
+          projectionChartInstance.update();
+        } else {
+          try {
+            projectionChartInstance = new Chart(lineCanvas, {
+              type: 'line',
+              data: {
+                labels: waterfall.labels,
+                datasets: [
+                  {
+                    label: 'Invested Wealth (Base)',
+                    data: waterfall.wealthBaseCurve,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: false,
+                    tension: 0.25,
+                    borderWidth: 2,
+                    pointRadius: 0
+                  },
+                  {
+                    label: 'Debt Balance',
+                    data: waterfall.debtCurve,
+                    borderColor: '#f43f5e',
+                    borderDash: [4, 4],
+                    borderWidth: 2,
+                    pointRadius: 0
+                  },
+                  {
+                    label: 'Emergency Buffer',
+                    data: waterfall.bufferCurve,
+                    borderColor: '#f59e0b',
+                    borderWidth: 1.5,
+                    pointRadius: 0
+                  },
+                  {
+                    label: 'Wealth (Conservative -3%)',
+                    data: waterfall.wealthConsCurve,
+                    borderColor: '#059669',
+                    borderDash: [2, 2],
+                    borderWidth: 1,
+                    pointRadius: 0
+                  },
+                  {
+                    label: 'Wealth (Optimistic +3%)',
+                    data: waterfall.wealthOptCurve,
+                    borderColor: '#34d399',
+                    borderDash: [2, 2],
+                    borderWidth: 1,
+                    pointRadius: 0
+                  }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index',
+                  intersect: false
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => ` ${ctx.dataset.label}: ₹${formatINR(ctx.raw)}`
+                    }
+                  }
+                },
+                scales: {
+                  x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#64748b', font: { size: 9 }, maxTicksLimit: 6 }
+                  },
+                  y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: {
+                      color: '#64748b',
+                      font: { size: 9 },
+                      callback: (v) => formatLakhCrore(v)
+                    }
+                  }
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('Chart.js Projection Line init failed:', e);
+          }
+        }
+      }
+
+      // Chart Nominal / Real Toggle styling
+      const btnNom = document.getElementById('btn-chart-nominal');
+      const btnReal = document.getElementById('btn-chart-real');
+      if (AppState.chartNominal) {
+        btnNom.className = 'px-2 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-300';
+        btnReal.className = 'px-2 py-0.5 rounded text-slate-400 hover:text-white';
+      } else {
+        btnReal.className = 'px-2 py-0.5 rounded font-semibold bg-cyan-500/20 text-cyan-300';
+        btnNom.className = 'px-2 py-0.5 rounded text-slate-400 hover:text-white';
+      }
+    }
+
+    function renderMacroRadar() {
+      const container = document.getElementById('macro-cards-container');
+      container.innerHTML = '';
+
+      const filterByRisk = !AppState.macroShowAll;
+      document.getElementById('macro-filter-label').textContent = filterByRisk ? `Filtered (${AppState.riskProfile})` : 'Showing All';
+
+      let items = CONFIG.EVERGREEN_MACRO;
+      if (filterByRisk) {
+        if (AppState.riskProfile === 'low') {
+          items = items.filter(i => i.tag === 'fd' || i.tag === 'rates' || i.tag === 'inflation');
+        } else if (AppState.riskProfile === 'high') {
+          items = items.filter(i => i.tag === 'equity' || i.tag === 'gold' || i.tag === 'tax');
+        }
+      }
+
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-xl border border-fin-border bg-slate-900/60 hover:border-slate-700 transition space-y-2 text-xs';
+
+        let badgeColor = 'bg-slate-800 text-slate-300';
+        if (item.tag === 'rates') badgeColor = 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30';
+        if (item.tag === 'gold') badgeColor = 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/30';
+        if (item.tag === 'equity') badgeColor = 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30';
+        if (item.tag === 'tax') badgeColor = 'bg-purple-500/10 text-purple-300 border border-purple-500/30';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-white text-xs">${item.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase ${badgeColor}">${item.tag}</span>
+          </div>
+          <p class="text-slate-400 text-[11px] leading-relaxed">${item.text}</p>
+          <div class="p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-[11px] flex items-start gap-2 text-slate-200">
+            <span class="text-emerald-400 font-bold shrink-0">Impact:</span>
+            <span>${item.meaning}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderMobileBar(surplusData, healthScore, gatekeeper, netWorthData) {
+      document.getElementById('mobile-surplus').textContent = `₹${formatINR(surplusData.availableSurplus)}/mo`;
+      document.getElementById('mobile-net-worth').textContent = formatLakhCrore(netWorthData.netWorth);
+
+      const pill = document.getElementById('mobile-gate-pill');
+      pill.textContent = gatekeeper.status;
+      if (gatekeeper.status === 'RED') pill.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40';
+      else if (gatekeeper.status === 'ORANGE') pill.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40';
+      else if (gatekeeper.status === 'YELLOW') pill.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40';
+      else pill.className = 'px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+    }
+
+
+    // ==========================================
+    // === 5. EVENTS ============================
+    // ==========================================
+
+    function triggerDebouncedRender() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        render();
+        persistState();
+      }, 150);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const msg = document.getElementById('toast-msg');
+      msg.textContent = message;
+      toast.classList.remove('translate-y-[-120%]', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.add('translate-y-[-120%]', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+
+    function persistState() {
+      try {
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(AppState));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+    }
+
+    function loadPersistedState() {
+      try {
+        const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.v === CONFIG.APP_VERSION) {
+            AppState = Object.assign({}, DEFAULT_STATE, parsed);
+            // Ensure nested assets exists
+            if (!AppState.assets) {
+              AppState.assets = { mutualFundsEquity: 0, epfPpf: 0, gold: 0, realEstateOther: 0 };
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('LocalStorage read error:', e);
+      }
+    }
+
+    function setupEventListeners() {
+      // Income Type toggles
+      document.getElementById('btn-type-salaried').addEventListener('click', () => {
+        AppState.incomeType = 'salaried';
+        triggerDebouncedRender();
+      });
+      document.getElementById('btn-type-irregular').addEventListener('click', () => {
+        AppState.incomeType = 'irregular';
+        triggerDebouncedRender();
+      });
+
+      // Income Slider & Number Input Sync
+      const sliderIncome = document.getElementById('slider-income');
+      const inputIncome = document.getElementById('input-income');
+      sliderIncome.addEventListener('input', (e) => {
+        const val = Number(e.target.value);
+        AppState.income = val;
+        inputIncome.value = val;
+        triggerDebouncedRender();
+      });
+      inputIncome.addEventListener('change', (e) => {
+        let val = Math.min(500000, Math.max(15000, Number(e.target.value) || 15000));
+        AppState.income = val;
+        sliderIncome.value = val;
+        inputIncome.value = val;
+        triggerDebouncedRender();
+      });
+
+      // Expenses Slider & Input Sync
+      const sliderExpenses = document.getElementById('slider-expenses');
+      const inputExpenses = document.getElementById('input-expenses');
+      sliderExpenses.addEventListener('input', (e) => {
+        const val = Number(e.target.value);
+        AppState.expenses = val;
+        inputExpenses.value = val;
+        triggerDebouncedRender();
+      });
+      inputExpenses.addEventListener('change', (e) => {
+        let val = Math.min(400000, Math.max(5000, Number(e.target.value) || 5000));
+        AppState.expenses = val;
+        sliderExpenses.value = val;
+        inputExpenses.value = val;
+        triggerDebouncedRender();
+      });
+
+      // Dependents select
+      document.getElementById('input-dependents').addEventListener('change', (e) => {
+        AppState.dependents = Number(e.target.value);
+        triggerDebouncedRender();
+      });
+
+      // Savings input
+      document.getElementById('input-savings').addEventListener('input', (e) => {
+        AppState.savings = Math.max(0, Number(e.target.value) || 0);
+        triggerDebouncedRender();
+      });
+
+      // Tracked Asset Inputs
+      document.getElementById('asset-input-mf').addEventListener('input', (e) => {
+        AppState.assets.mutualFundsEquity = Math.max(0, Number(e.target.value) || 0);
+        triggerDebouncedRender();
+      });
+      document.getElementById('asset-input-epf').addEventListener('input', (e) => {
+        AppState.assets.epfPpf = Math.max(0, Number(e.target.value) || 0);
+        triggerDebouncedRender();
+      });
+      document.getElementById('asset-input-gold').addEventListener('input', (e) => {
+        AppState.assets.gold = Math.max(0, Number(e.target.value) || 0);
+        triggerDebouncedRender();
+      });
+      document.getElementById('asset-input-realestate').addEventListener('input', (e) => {
+        AppState.assets.realEstateOther = Math.max(0, Number(e.target.value) || 0);
+        triggerDebouncedRender();
+      });
+
+      // Insurance selects
+      document.getElementById('select-health-insurance').addEventListener('change', (e) => {
+        AppState.healthInsurance = e.target.value;
+        triggerDebouncedRender();
+      });
+      document.getElementById('select-term-insurance').addEventListener('change', (e) => {
+        AppState.termInsurance = e.target.value;
+        triggerDebouncedRender();
+      });
+
+      // Tax Regime buttons
+      document.getElementById('btn-regime-new').addEventListener('click', () => {
+        AppState.taxRegime = 'new';
+        triggerDebouncedRender();
+      });
+      document.getElementById('btn-regime-old').addEventListener('click', () => {
+        AppState.taxRegime = 'old';
+        triggerDebouncedRender();
+      });
+
+      // Risk Profile Radio Buttons
+      document.querySelectorAll('input[name="risk-profile"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          AppState.riskProfile = e.target.value;
+          triggerDebouncedRender();
+        });
+      });
+
+      // Booster Slider
+      document.getElementById('slider-booster').addEventListener('input', (e) => {
+        AppState.booster = Number(e.target.value) || 0;
+        triggerDebouncedRender();
+      });
+
+      // Micro recovery checkboxes
+      document.querySelectorAll('.micro-cb').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const amt = Number(e.target.dataset.amount);
+          if (amt === 1500) AppState.microRecoverySelections.dining = e.target.checked;
+          if (amt === 800) AppState.microRecoverySelections.subscriptions = e.target.checked;
+          if (amt === 3500) AppState.microRecoverySelections.gig = e.target.checked;
+          triggerDebouncedRender();
+        });
+      });
+
+      // Yellow Split Slider
+      document.getElementById('slider-yellow-split').addEventListener('input', (e) => {
+        AppState.yellowBufferSplit = Number(e.target.value);
+        triggerDebouncedRender();
+      });
+
+      // Inflation Rate Input
+      document.getElementById('input-inflation').addEventListener('change', (e) => {
+        AppState.inflationRate = Number(e.target.value) || CONFIG.DEFAULT_INFLATION_RATE;
+        triggerDebouncedRender();
+      });
+
+      // Nominal vs Real Chart Toggle
+      document.getElementById('btn-chart-nominal').addEventListener('click', () => {
+        AppState.chartNominal = true;
+        triggerDebouncedRender();
+      });
+      document.getElementById('btn-chart-real').addEventListener('click', () => {
+        AppState.chartNominal = false;
+        triggerDebouncedRender();
+      });
+
+      // Refinance Drawer Toggle
+      document.getElementById('btn-toggle-refinance').addEventListener('click', () => {
+        const panel = document.getElementById('refinance-panel');
+        const icon = document.getElementById('refinance-toggle-icon');
+        panel.classList.toggle('hidden');
+        icon.textContent = panel.classList.contains('hidden') ? '+' : '−';
+      });
+      document.getElementById('refinance-new-apr').addEventListener('input', triggerDebouncedRender);
+      document.getElementById('refinance-fee').addEventListener('input', triggerDebouncedRender);
+
+      // Macro Risk Toggle
+      document.getElementById('btn-toggle-macro-all').addEventListener('click', () => {
+        AppState.macroShowAll = !AppState.macroShowAll;
+        renderMacroRadar();
+      });
+
+      // Macro Custom Feed Drawer Toggle
+      document.getElementById('btn-toggle-macro-custom').addEventListener('click', () => {
+        document.getElementById('macro-custom-box').classList.toggle('hidden');
+      });
+
+      // Fetch custom feed with 6-second timeout and 30-min cache
+      document.getElementById('btn-fetch-feed').addEventListener('click', fetchCustomFeed);
+
+      // Debt Modal Controls
+      document.getElementById('btn-add-debt').addEventListener('click', openAddDebtModal);
+      document.getElementById('btn-close-debt-modal').addEventListener('click', closeDebtModal);
+      document.getElementById('btn-cancel-debt-modal').addEventListener('click', closeDebtModal);
+      document.getElementById('btn-save-debt-modal').addEventListener('click', saveDebtFromModal);
+
+      // Delete debt delegation
+      document.getElementById('debts-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action="delete-debt"]');
+        if (btn) {
+          const idx = Number(btn.dataset.index);
+          AppState.debts.splice(idx, 1);
+          triggerDebouncedRender();
+          showToast('Debt removed');
+        }
+      });
+
+      // Presets (Exact values from requirements + Net Worth assets)
+      document.getElementById('preset-30k').addEventListener('click', () => {
+        applyPreset({
+          incomeType: 'salaried',
+          income: 30000,
+          expenses: 18000,
+          savings: 25000,
+          dependents: 0,
+          healthInsurance: '5LorMore',
+          termInsurance: 'yes',
+          debts: [],
+          assets: {
+            mutualFundsEquity: 15000,
+            epfPpf: 30000,
+            gold: 20000,
+            realEstateOther: 0
+          }
+        }, 'Preset Loaded: ₹30,000 Earner (Yellow Gate)');
+      });
+
+      document.getElementById('preset-100k').addEventListener('click', () => {
+        applyPreset({
+          incomeType: 'salaried',
+          income: 100000,
+          expenses: 45000,
+          savings: 300000,
+          dependents: 1,
+          healthInsurance: '5LorMore',
+          termInsurance: 'yes',
+          debts: [],
+          assets: {
+            mutualFundsEquity: 600000,
+            epfPpf: 450000,
+            gold: 250000,
+            realEstateOther: 500000
+          }
+        }, 'Preset Loaded: ₹1,00,000 Earner (Green Gate)');
+      });
+
+      document.getElementById('preset-debt').addEventListener('click', () => {
+        applyPreset({
+          incomeType: 'salaried',
+          income: 40000,
+          expenses: 22000,
+          savings: 8000,
+          dependents: 0,
+          healthInsurance: 'under5L',
+          termInsurance: 'no',
+          debts: [
+            { id: 'd1', name: 'Credit Card', principal: 85000, apr: 36, emi: 4250, estimated: false },
+            { id: 'd2', name: 'Personal Loan', principal: 150000, apr: 14, emi: 5200, estimated: false }
+          ],
+          assets: {
+            mutualFundsEquity: 0,
+            epfPpf: 40000,
+            gold: 25000,
+            realEstateOther: 0
+          }
+        }, 'Preset Loaded: Debt Recovery Mode (Red Gate)');
+      });
+
+      // Save Plan Button
+      document.getElementById('btn-save-plan').addEventListener('click', () => {
+        persistState();
+        showToast('Plan saved to browser storage ✓');
+      });
+
+      // Reset Button with Confirmation
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        if (confirm('Reset all values and debts back to defaults?')) {
+          localStorage.removeItem(CONFIG.STORAGE_KEY);
+          AppState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+          syncInputsFromState();
+          render();
+          showToast('Reset to defaults');
+        }
+      });
+
+      // Export WhatsApp Summary
+      document.getElementById('btn-export-wa').addEventListener('click', exportWhatsApp);
+
+      // Export JSON
+      document.getElementById('btn-export-json').addEventListener('click', exportJSON);
+
+      // Print / PDF
+      document.getElementById('btn-print').addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    function applyPreset(presetData, toastMessage) {
+      Object.assign(AppState, presetData);
+      syncInputsFromState();
+      render();
+      persistState();
+      showToast(toastMessage);
+    }
+
+    function syncInputsFromState() {
+      document.getElementById('slider-income').value = AppState.income;
+      document.getElementById('input-income').value = AppState.income;
+      document.getElementById('slider-expenses').value = AppState.expenses;
+      document.getElementById('input-expenses').value = AppState.expenses;
+      document.getElementById('input-dependents').value = AppState.dependents;
+      document.getElementById('input-savings').value = AppState.savings;
+      document.getElementById('select-health-insurance').value = AppState.healthInsurance;
+      document.getElementById('select-term-insurance').value = AppState.termInsurance;
+      document.getElementById('input-inflation').value = AppState.inflationRate;
+
+      // Tracked Asset Inputs
+      document.getElementById('asset-input-mf').value = AppState.assets?.mutualFundsEquity || '';
+      document.getElementById('asset-input-epf').value = AppState.assets?.epfPpf || '';
+      document.getElementById('asset-input-gold').value = AppState.assets?.gold || '';
+      document.getElementById('asset-input-realestate').value = AppState.assets?.realEstateOther || '';
+
+      // Risk Profile radio
+      const radio = document.querySelector(`input[name="risk-profile"][value="${AppState.riskProfile}"]`);
+      if (radio) radio.checked = true;
+    }
+
+    function openAddDebtModal() {
+      document.getElementById('debt-input-name').value = '';
+      document.getElementById('debt-input-principal').value = '';
+      document.getElementById('debt-input-apr').value = '';
+      document.getElementById('debt-input-emi').value = '';
+      document.getElementById('debt-modal').classList.remove('hidden');
+    }
+
+    function closeDebtModal() {
+      document.getElementById('debt-modal').classList.add('hidden');
+    }
+
+    function saveDebtFromModal() {
+      const name = document.getElementById('debt-input-name').value.trim() || 'Loan / Debt';
+      const principal = Number(document.getElementById('debt-input-principal').value) || 0;
+      const apr = Number(document.getElementById('debt-input-apr').value) || 0;
+      const rawEmi = document.getElementById('debt-input-emi').value;
+
+      if (principal <= 0) {
+        alert('Please enter an outstanding balance greater than ₹0');
+        return;
+      }
+      if (apr <= 0) {
+        alert('Please enter an APR percentage greater than 0%');
+        return;
+      }
+
+      const emi = rawEmi !== '' ? Number(rawEmi) : null;
+
+      AppState.debts.push({
+        id: 'debt_' + Date.now(),
+        name,
+        principal,
+        apr,
+        emi,
+        estimated: emi === null
+      });
+
+      closeDebtModal();
+      triggerDebouncedRender();
+      showToast('Debt added to avalanche queue');
+    }
+
+    async function fetchCustomFeed() {
+      const url = document.getElementById('input-macro-url').value.trim();
+      const statusEl = document.getElementById('macro-fetch-status');
+      if (!url) {
+        statusEl.textContent = 'Please enter a valid URL.';
+        return;
+      }
+
+      // Check 30-min cache in localStorage
+      const cacheKey = 'finpilot_macro_cache_' + btoa(url).substring(0, 16);
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { timestamp, data } = JSON.parse(cached);
+          if (Date.now() - timestamp < 30 * 60 * 1000) {
+            statusEl.textContent = 'Loaded fresh from 30-minute cache ✓';
+            displayCustomMacroItems(data);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Cache error:', e);
+      }
+
+      statusEl.textContent = 'Connecting with 6s timeout...';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        // Cache for 30 minutes
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data
+        }));
+
+        statusEl.textContent = 'Feed parsed and cached successfully ✓';
+        displayCustomMacroItems(data);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        statusEl.textContent = 'Fetch failed (CORS or timeout). Using offline evergreen macro context.';
+        console.warn('Feed fetch error:', err);
+      }
+    }
+
+    function displayCustomMacroItems(data) {
+      if (!Array.isArray(data)) return;
+      const container = document.getElementById('macro-cards-container');
+      data.slice(0, 3).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-lg border border-cyan-500/30 bg-cyan-950/20 text-xs space-y-1';
+        div.innerHTML = `
+          <div class="flex justify-between font-bold text-cyan-200">
+            <span>${item.title || 'Live Update'}</span>
+            <span class="text-[10px] text-cyan-400">Live</span>
+          </div>
+          <p class="text-slate-300 text-[11px]">${item.description || item.summary || ''}</p>
+        `;
+        container.prepend(div);
+      });
+    }
+
+    function exportWhatsApp() {
+      const surplusData = calculateSurplus(AppState.income, AppState.incomeType, AppState.expenses, AppState.debts);
+      const gatekeeper = determineGatekeeper(AppState);
+      const health = calculateHealthScore(AppState, surplusData, gatekeeper.targetBuffer);
+      const debtSim = simulateDebtPayoff(AppState.debts, AppState.booster);
+      const nw = calculateNetWorth(AppState);
+
+      const text = [
+        `📊 *FinPilot Financial Assessment*`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `• *Net Worth:* ${nw.netWorth < 0 ? '−₹' : '₹'}${formatINR(Math.abs(nw.netWorth))} (${formatLakhCrore(nw.netWorth)})`,
+        `  (Assets: ₹${formatINR(nw.totalAssets)} | Debts: ₹${formatINR(nw.totalLiabilities)})`,
+        `• *Health Score:* ${health.total}/100 (${health.grade})`,
+        `• *Monthly In-Hand:* ₹${formatINR(AppState.income)} (${AppState.incomeType})`,
+        `• *Essential Expenses:* ₹${formatINR(AppState.expenses)}`,
+        `• *Mandatory EMIs:* ₹${formatINR(surplusData.totalMinEmis)}`,
+        `• *Net Surplus:* ₹${formatINR(surplusData.availableSurplus)}/mo`,
+        `• *Gate Status:* ${gatekeeper.status} (${gatekeeper.title})`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        debtSim.hasDebt
+          ? `⚡ *Debt Avalanche Plan:*
+• Months Saved: ${debtSim.monthsSaved}
+• Interest Saved: ₹${formatINR(debtSim.interestSaved)}
+• Debt-Free Target: ${debtSim.debtFreeDate}`
+          : `🛡️ *Debt-Free Status:* 0 active debts`,
+        `━━━━━━━━━━━━━━━━━━━━`,
+        `🎯 *Next Best Action:* ${determineNextBestAction(AppState, gatekeeper, surplusData).title}`,
+        ``,
+        `_Generated via FinPilot (Client-side, privacy-first)_`
+      ].join('\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('WhatsApp summary copied to clipboard! 📋');
+      }).catch(() => {
+        prompt('Copy your WhatsApp summary below:', text);
+      });
+    }
+
+    function exportJSON() {
+      const payload = {
+        meta: {
+          app: 'FinPilot',
+          version: CONFIG.APP_VERSION,
+          exportedAt: new Date().toISOString()
+        },
+        state: AppState,
+        computed: {
+          netWorth: calculateNetWorth(AppState)
+        }
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `finpilot-plan-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Downloaded plan JSON ✓');
+    }
+
+
+    // ==========================================
+    // === 6. SELF-TESTS ========================
+    // ==========================================
+
+    function runSelfTests() {
+      const results = [];
+
+      // Test 1: EMI Calculation on ₹1,00,000, 12% APR, 12 months ≈ ₹8,884.88
+      const emiTestVal = calculateEMI(100000, 12, 12);
+      const emiPassed = Math.abs(emiTestVal - 8884.88) < 0.1;
+      results.push({
+        Test: '1. EMI Formula Precision',
+        Expected: '≈ ₹8,884.88',
+        Actual: `₹${emiTestVal}`,
+        Status: emiPassed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 2: Payment <= monthly interest is flagged
+      const toxicDebt = [{ id: 't1', name: 'Test Card', principal: 100000, apr: 36, emi: 2500 }];
+      // Monthly interest = 100000 * (0.36 / 12) = ₹3,000. EMI is 2500 <= 3000
+      const debtSimTest = simulateDebtPayoff(toxicDebt, 0);
+      const flagPassed = debtSimTest.neverPaysWarning === true;
+      results.push({
+        Test: '2. Payment <= Interest Flagged',
+        Expected: 'neverPaysWarning = true',
+        Actual: `Warning: ${debtSimTest.neverPaysWarning}`,
+        Status: flagPassed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 3: Negative surplus triggers Deficit
+      const deficitCalc = calculateSurplus(30000, 'salaried', 35000, []);
+      const deficitPassed = deficitCalc.isDeficit === true && deficitCalc.rawSurplus === -5000;
+      results.push({
+        Test: '3. Negative Surplus Triggers Deficit',
+        Expected: 'isDeficit = true, -₹5,000',
+        Actual: `isDeficit: ${deficitCalc.isDeficit}, ${deficitCalc.rawSurplus}`,
+        Status: deficitPassed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 4: Preset "Test ₹30,000 Earner" lands on Yellow
+      const p1State = {
+        incomeType: 'salaried',
+        income: 30000,
+        expenses: 18000,
+        savings: 25000,
+        dependents: 0,
+        debts: []
+      };
+      const p1Gate = determineGatekeeper(p1State);
+      const p1Passed = p1Gate.status === 'YELLOW';
+      results.push({
+        Test: '4. Preset ₹30k Earner Gate',
+        Expected: 'YELLOW',
+        Actual: p1Gate.status,
+        Status: p1Passed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 5: Preset "Test ₹1,00,000 Earner" lands on Green
+      const p2State = {
+        incomeType: 'salaried',
+        income: 100000,
+        expenses: 45000,
+        savings: 300000,
+        dependents: 0,
+        debts: []
+      };
+      const p2Gate = determineGatekeeper(p2State);
+      const p2Passed = p2Gate.status === 'GREEN';
+      results.push({
+        Test: '5. Preset ₹100k Earner Gate',
+        Expected: 'GREEN',
+        Actual: p2Gate.status,
+        Status: p2Passed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 6: Preset "Test Debt Recovery Mode" lands on Red
+      const p3State = {
+        incomeType: 'salaried',
+        income: 40000,
+        expenses: 22000,
+        savings: 8000,
+        dependents: 0,
+        debts: [
+          { id: 'd1', name: 'Card', principal: 85000, apr: 36, emi: 4250 },
+          { id: 'd2', name: 'Loan', principal: 150000, apr: 14, emi: 5200 }
+        ]
+      };
+      const p3Gate = determineGatekeeper(p3State);
+      const p3Passed = p3Gate.status === 'RED';
+      results.push({
+        Test: '6. Preset Debt Recovery Gate',
+        Expected: 'RED',
+        Actual: p3Gate.status,
+        Status: p3Passed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 7: Multi-asset allocation weights sum to 100%
+      const testAlloc = calculateAssetAllocation(10000, 'moderate', { status: 'GREEN' });
+      const sumShares = testAlloc.reduce((acc, i) => acc + i.share, 0);
+      const sharesPassed = sumShares >= 99 && sumShares <= 101; // Allow rounding
+      results.push({
+        Test: '7. Allocations Sum to 100%',
+        Expected: '100%',
+        Actual: `${sumShares}%`,
+        Status: sharesPassed ? 'PASS' : 'FAIL'
+      });
+
+      // Test 8: Minimum-Ticket Rule (No card below ₹500)
+      const microAlloc = calculateAssetAllocation(1200, 'moderate', { status: 'GREEN' });
+      const noCardsBelow500 = microAlloc.every(item => item.finalAmount >= 500);
+      results.push({
+        Test: '8. Min-Ticket Rule (All >= ₹500)',
+        Expected: 'All items >= ₹500',
+        Actual: noCardsBelow500 ? 'All qualified' : 'Failed threshold',
+        Status: noCardsBelow500 ? 'PASS' : 'FAIL'
+      });
+
+      // Test 9: Net Worth Formula Precision (Total Assets - Total Liabilities)
+      const testNwState = {
+        savings: 50000,
+        assets: {
+          mutualFundsEquity: 100000,
+          epfPpf: 150000,
+          gold: 50000,
+          realEstateOther: 200000
+        },
+        debts: [
+          { id: 't1', principal: 150000, apr: 10, emi: 4000 }
+        ]
+      };
+      // Total assets = 50k + 100k + 150k + 50k + 200k = 550,000
+      // Total debt = 150,000
+      // Net worth = 400,000
+      const nwResult = calculateNetWorth(testNwState);
+      const nwPassed = nwResult.totalAssets === 550000 && nwResult.totalLiabilities === 150000 && nwResult.netWorth === 400000;
+      results.push({
+        Test: '9. Net Worth (Assets − Liabilities)',
+        Expected: 'Assets: 5.5L, Debt: 1.5L = 4.0L',
+        Actual: `NW: ₹${formatINR(nwResult.netWorth)}`,
+        Status: nwPassed ? 'PASS' : 'FAIL'
+      });
+
+      // Output to console.table as per spec
+      console.log('%c=== FinPilot Self-Tests Results ===', 'color: #10b981; font-weight: bold; font-size: 14px;');
+      console.table(results);
+
+      // Render on-screen banner if ?test=1
+      const banner = document.getElementById('test-results-banner');
+      const badge = document.getElementById('test-summary-badge');
+      const list = document.getElementById('test-results-list');
+
+      if (banner && list) {
+        banner.classList.remove('hidden');
+        const allPassed = results.every(r => r.Status === 'PASS');
+        badge.textContent = allPassed ? `${results.length}/${results.length} TESTS PASSED ✓` : 'SOME TESTS FAILED';
+        badge.className = allPassed
+          ? 'px-2 py-0.5 rounded font-mono text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+          : 'px-2 py-0.5 rounded font-mono text-[11px] bg-rose-950 text-rose-300 border border-rose-500/40';
+
+        list.innerHTML = results.map(r => `
+          <div class="flex justify-between items-center py-0.5 border-b border-indigo-900/40">
+            <span>${r.Test}: <strong class="text-white">${r.Actual}</strong></span>
+            <span class="font-bold ${r.Status === 'PASS' ? 'text-emerald-400' : 'text-rose-400'}">[${r.Status}]</span>
+          </div>
+        `).join('');
+      }
+    }
+
+
+    // ==========================================
+    // === APPLICATION INITIALIZATION ===========
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPersistedState();
+      syncInputsFromState();
+      setupEventListeners();
+      render();
+
+      // Check URL params for ?test=1
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('test') === '1') {
+        runSelfTests();
+      }
+    });
+  </script>
+</body>
+</html>
